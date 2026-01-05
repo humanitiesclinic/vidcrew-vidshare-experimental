@@ -1,0 +1,194 @@
+<template>
+  <q-page class="feed-page fullscreen">
+    <!-- Full-screen video card -->
+    <transition name="fade" mode="out-in">
+      <NoteCard
+        v-if="notesStore.currentNote"
+        :key="notesStore.currentNote.id"
+        :note="notesStore.currentNote"
+      />
+    </transition>
+
+    <!-- Position indicator -->
+    <div class="position-badge">
+      <q-badge color="primary" text-color="white">
+        {{ notesStore.currentNoteIndex + 1 }} / {{ notesStore.totalNotes }}
+      </q-badge>
+    </div>
+
+    <!-- Navigation hints -->
+    <div class="nav-hints">
+      <div class="hint up-hint">↑ Prev</div>
+      <div class="hint down-hint">↓ Next</div>
+      <div class="hint left-hint">← Prev Group</div>
+      <div class="hint right-hint">→ Next Group</div>
+    </div>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
+import NoteCard from 'components/NoteCard.vue';
+import { useNotesStore } from 'stores/notesStore';
+
+const notesStore = useNotesStore();
+const threshold = 50; // Minimum swipe distance
+let touchStartX = 0;
+let touchStartY = 0;
+
+// Keyboard navigation: 4 directions
+const handleKeyDown = (e: KeyboardEvent) => {
+  switch (e.key) {
+    case 'ArrowUp':
+    case 'k':
+      notesStore.prevNote();
+      break;
+    case 'ArrowDown':
+    case 'j':
+      notesStore.nextNote();
+      break;
+    case 'ArrowLeft':
+    case 'h':
+      notesStore.prevInGroup();
+      break;
+    case 'ArrowRight':
+    case 'l':
+      notesStore.nextInGroup();
+      break;
+  }
+};
+
+// Swipe detection: 4 directions
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+};
+
+const handleTouchEnd = (e: TouchEvent) => {
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+
+  const diffX = touchStartX - touchEndX;
+  const diffY = touchStartY - touchEndY;
+
+  // Determine primary direction
+  const absX = Math.abs(diffX);
+  const absY = Math.abs(diffY);
+
+  if (absY > absX && absY > threshold) {
+    // Vertical swipe
+    if (diffY > 0) {
+      notesStore.nextNote(); // Swiped up
+    } else {
+      notesStore.prevNote(); // Swiped down
+    }
+  } else if (absX > absY && absX > threshold) {
+    // Horizontal swipe
+    if (diffX > 0) {
+      notesStore.prevInGroup(); // Swiped left
+    } else {
+      notesStore.nextInGroup(); // Swiped right
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('touchstart', handleTouchStart);
+  window.addEventListener('touchend', handleTouchEnd);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('touchstart', handleTouchStart);
+  window.removeEventListener('touchend', handleTouchEnd);
+});
+</script>
+
+<style scoped lang="scss">
+.feed-page {
+  background: #000;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  &.fullscreen {
+    padding: 0;
+    margin: 0;
+  }
+
+  .position-badge {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+
+  .nav-hints {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px 20px;
+    z-index: 5;
+
+    .hint {
+      position: absolute;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-weight: 500;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .up-hint {
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .down-hint {
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .left-hint {
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .right-hint {
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+
+  &:hover .nav-hints .hint {
+    opacity: 1;
+  }
+}
+
+// Fade transition for cards
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

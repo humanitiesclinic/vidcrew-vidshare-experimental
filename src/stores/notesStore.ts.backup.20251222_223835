@@ -1,0 +1,132 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+
+export interface Note {
+  id: number;
+  text: string;
+  specialDateId: number;
+  year: number;
+  videoPath: string;
+  startTime: number;
+  endTime: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const useNotesStore = defineStore('notes', () => {
+  const notes = ref<Note[]>([
+    {
+      id: 1,
+      text: 'Screen recording segment one',
+      specialDateId: 1,
+      year: 2024,
+      videoPath: '/Users/user/Screen Record_2025-12-22 03.52.13.mov',
+      startTime: 30.0,
+      endTime: 120.0,
+      createdAt: '2025-12-22T03:52:13Z',
+      updatedAt: '2025-12-22T03:52:13Z'
+    },
+    {
+      id: 2,
+      text: 'Screen recording segment two',
+      specialDateId: 1,
+      year: 2024,
+      videoPath: '/Users/user/Screen Record_2025-12-22 03.52.13.mov',
+      startTime: 250.0,
+      endTime: 400.0,
+      createdAt: '2025-12-22T03:53:00Z',
+      updatedAt: '2025-12-22T03:53:00Z'
+    },
+    {
+      id: 3,
+      text: 'iPhone video clip one',
+      specialDateId: 2,
+      year: 2025,
+      videoPath: '/Volumes/B79P2/iP13-B79P2-7/APHI7754.MP4',
+      startTime: 10.0,
+      endTime: 90.0,
+      createdAt: '2025-12-16T11:00:00Z',
+      updatedAt: '2025-12-16T11:00:00Z'
+    },
+    {
+      id: 4,
+      text: 'iPhone video clip two',
+      specialDateId: 2,
+      year: 2025,
+      videoPath: '/Volumes/B79P2/iP13-B79P2-7/APHI7754.MP4',
+      startTime: 150.0,
+      endTime: 280.0,
+      createdAt: '2025-12-16T11:10:00Z',
+      updatedAt: '2025-12-16T11:10:00Z'
+    }
+  ]);
+
+  const currentNoteIndex = ref(0);
+
+  const currentNote = computed(() => notes.value[currentNoteIndex.value] || null);
+
+  const totalNotes = computed(() => notes.value.length);
+
+  function addNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) {
+    const newNote: Note = {
+      ...note,
+      id: Math.max(...notes.value.map(n => n.id), 0) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    notes.value.push(newNote);
+    return newNote;
+  }
+
+  function updateNote(id: number, updates: Partial<Omit<Note, 'id' | 'createdAt'>>) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value[index] = {
+        ...notes.value[index],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  function deleteNote(id: number) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value.splice(index, 1);
+      if (currentNoteIndex.value >= notes.value.length) {
+        currentNoteIndex.value = Math.max(0, notes.value.length - 1);
+      }
+    }
+  }
+
+  function goToNote(index: number) {
+    if (index >= 0 && index < notes.value.length) {
+      currentNoteIndex.value = index;
+    }
+  }
+
+  function nextNote() {
+    if (currentNoteIndex.value < notes.value.length - 1) {
+      currentNoteIndex.value++;
+    }
+  }
+
+  function prevNote() {
+    if (currentNoteIndex.value > 0) {
+      currentNoteIndex.value--;
+    }
+  }
+
+  return {
+    notes,
+    currentNoteIndex,
+    currentNote,
+    totalNotes,
+    addNote,
+    updateNote,
+    deleteNote,
+    goToNote,
+    nextNote,
+    prevNote
+  };
+});

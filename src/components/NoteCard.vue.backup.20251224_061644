@@ -1,0 +1,264 @@
+<template>
+  <div class="note-card">
+    <!-- Video container with play overlay -->
+    <div class="video-container">
+      <video
+        ref="videoPlayer"
+        class="video-player"
+        :src="note.videoPath"
+        controls
+        @play="onVideoPlay"
+        @pause="onVideoPause"
+      >
+        Your browser does not support the video tag.
+      </video>
+
+      <!-- Play overlay -->
+      <div v-if="!isPlaying" class="play-overlay" @click="playUnmuted">
+        <q-icon name="play_arrow" size="4rem" color="white" />
+        <p class="q-mt-md">Click to play unmuted</p>
+      </div>
+    </div>
+
+    <!-- Metadata section -->
+    <div class="metadata-section">
+      <!-- Title -->
+      <h2 class="description">{{ note.description }}</h2>
+
+      <!-- Metadata grid -->
+      <div class="metadata-grid">
+        <div class="meta-item">
+          <span class="label">Class Event:</span>
+          <span class="value">{{ note.classEvent }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Instance:</span>
+          <span class="value">{{ note.instance }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Description Group:</span>
+          <span class="value">{{ note.descriptionGroup }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Start Time:</span>
+          <span class="value">{{ formatTime(note.startTime) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">End Time:</span>
+          <span class="value">{{ formatTime(note.endTime) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Duration:</span>
+          <span class="value">{{ formatTime(note.metadata.duration) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Resolution:</span>
+          <span class="value">{{ note.metadata.resolution }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Codec:</span>
+          <span class="value">{{ note.metadata.codec }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Frame Rate:</span>
+          <span class="value">{{ note.metadata.frameRate }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Bitrate:</span>
+          <span class="value">{{ note.metadata.bitrate }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Audio Codec:</span>
+          <span class="value">{{ note.metadata.audioCodec }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Sample Rate:</span>
+          <span class="value">{{ note.metadata.sampleRate }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Channels:</span>
+          <span class="value">{{ note.metadata.channels }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Created:</span>
+          <span class="value">{{ formatDate(note.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import type { Note } from 'stores/notesStore';
+
+interface Props {
+  note: Note;
+}
+
+const props = defineProps<Props>();
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+const isPlaying = ref(false);
+
+onMounted(() => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+});
+
+watch(
+  () => props.note.id,
+  () => {
+    if (videoPlayer.value) {
+      videoPlayer.value.currentTime = props.note.startTime;
+      videoPlayer.value.play().catch(() => {
+        // Autoplay may be prevented by browser
+      });
+    }
+  }
+);
+
+const playUnmuted = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.muted = false;
+    videoPlayer.value.currentTime = props.note.startTime;
+    videoPlayer.value.play();
+  }
+};
+
+const onVideoPlay = () => {
+  isPlaying.value = true;
+  if (videoPlayer.value) {
+    videoPlayer.value.addEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const onVideoPause = () => {
+  isPlaying.value = false;
+  if (videoPlayer.value) {
+    videoPlayer.value.removeEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const checkEndTime = () => {
+  if (videoPlayer.value && videoPlayer.value.currentTime >= props.note.endTime) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+};
+
+const seekTo = (time: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = time;
+    videoPlayer.value.play();
+  }
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+</script>
+
+<style scoped lang="scss">
+.note-card {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      p {
+        color: white;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+    }
+  }
+
+  .metadata-section {
+    padding: 20px;
+    background: #1a1a1a;
+    color: white;
+    overflow-y: auto;
+    max-height: 50vh;
+
+    .description {
+      margin: 0 0 16px 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+      font-size: 0.875rem;
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+
+        .label {
+          color: #aaa;
+          font-weight: 500;
+          margin-bottom: 4px;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .value {
+          color: #fff;
+          font-weight: 400;
+        }
+      }
+    }
+  }
+}
+</style>

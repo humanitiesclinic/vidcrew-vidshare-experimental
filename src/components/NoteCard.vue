@@ -1,0 +1,454 @@
+<template>
+  <div ref="cardContainer" class="note-card">
+    <!-- Video container with play overlay -->
+    <div class="video-container">
+      <video
+        ref="videoPlayer"
+        class="video-player"
+        :src="note.videoPath"
+        controls
+        autoplay
+        muted
+        @play="onVideoPlay"
+        @pause="onVideoPause"
+      >
+        Your browser does not support the video tag.
+      </video>
+
+    </div>
+
+    <!-- Metadata section -->
+    <div class="metadata-section">
+      <!-- Title (editable) -->
+      <h2 class="description editable" @click="startEditDescription" @blur="saveDescription" @keydown.enter="saveDescription" @keydown.escape="cancelEdit">
+        <span v-if="editingField !== 'description'" class="display-text">{{ note.description }}</span>
+        <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="text" @click.stop @keydown.left.stop @keydown.right.stop />
+      </h2>
+
+      <!-- Metadata grid -->
+      <div class="metadata-grid">
+        <!-- Editable fields -->
+        <div class="meta-item editable-item" @click="startEditField('classEvent')">
+          <div class="label-with-chip">
+            <span class="label">Class Event:</span>
+            <q-badge color="primary" label="editable" />
+          </div>
+          <span v-if="editingField !== 'classEvent'" class="value">{{ note.classEvent }}</span>
+          <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="text" @blur="saveField('classEvent')" @keydown.enter="saveField('classEvent')" @keydown.escape="cancelEdit" @click.stop @keydown.left.stop @keydown.right.stop />
+        </div>
+        <div class="meta-item editable-item" @click="startEditField('instance')">
+          <div class="label-with-chip">
+            <span class="label">Instance:</span>
+            <q-badge color="primary" label="editable" />
+          </div>
+          <span v-if="editingField !== 'instance'" class="value">{{ note.instance }}</span>
+          <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="number" @blur="saveField('instance')" @keydown.enter="saveField('instance')" @keydown.escape="cancelEdit" @click.stop @keydown.left.stop @keydown.right.stop />
+        </div>
+        <div class="meta-item editable-item" @click="startEditField('descriptionGroup')">
+          <div class="label-with-chip">
+            <span class="label">Description Group:</span>
+            <q-badge color="primary" label="editable" />
+          </div>
+          <span v-if="editingField !== 'descriptionGroup'" class="value">{{ note.descriptionGroup }}</span>
+          <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="text" @blur="saveField('descriptionGroup')" @keydown.enter="saveField('descriptionGroup')" @keydown.escape="cancelEdit" @click.stop @keydown.left.stop @keydown.right.stop />
+        </div>
+        <div class="meta-item editable-item" @click="startEditField('startTime')">
+          <div class="label-with-chip">
+            <span class="label">Start Time:</span>
+            <q-badge color="primary" label="editable" />
+          </div>
+          <span v-if="editingField !== 'startTime'" class="value">{{ formatTime(note.startTime) }}</span>
+          <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="number" step="0.1" @blur="saveField('startTime')" @keydown.enter="saveField('startTime')" @keydown.escape="cancelEdit" @click.stop @keydown.left.stop @keydown.right.stop />
+        </div>
+        <div class="meta-item editable-item" @click="startEditField('endTime')">
+          <div class="label-with-chip">
+            <span class="label">End Time:</span>
+            <q-badge color="primary" label="editable" />
+          </div>
+          <span v-if="editingField !== 'endTime'" class="value">{{ formatTime(note.endTime) }}</span>
+          <input v-else v-model="editingValue" ref="editInputRef" class="edit-input" type="number" step="0.1" @blur="saveField('endTime')" @keydown.enter="saveField('endTime')" @keydown.escape="cancelEdit" @click.stop @keydown.left.stop @keydown.right.stop />
+        </div>
+        <!-- Read-only fields -->
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Duration:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ formatTime(note.metadata.duration) }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Resolution:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.resolution }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Codec:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.codec }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Frame Rate:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.frameRate }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Bitrate:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.bitrate }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Audio Codec:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.audioCodec }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Sample Rate:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.sampleRate }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Channels:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ note.metadata.channels }}</span>
+        </div>
+        <div class="meta-item">
+          <div class="label-with-chip">
+            <span class="label">Created:</span>
+            <q-badge color="grey-7" label="read-only" />
+          </div>
+          <span class="value">{{ formatDate(note.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import type { Note } from 'stores/notesStore';
+
+interface Props {
+  note: Note;
+}
+
+const props = defineProps<Props>();
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+const cardContainer = ref<HTMLDivElement | null>(null);
+const editingField = ref<string | null>(null);
+const editingValue = ref<string>('');
+const originalValue = ref<any>(null);
+const editInputRef = ref<HTMLInputElement | null>(null);
+let intersectionObserver: IntersectionObserver | null = null;
+
+onMounted(() => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+
+  // Setup Intersection Observer for visibility
+  if (cardContainer.value) {
+    intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (videoPlayer.value) {
+          if (entry.isIntersecting) {
+            // Card is visible - autoplay
+            videoPlayer.value.play().catch(() => {
+              // Autoplay prevented
+            });
+          } else {
+            // Card is not visible - pause
+            videoPlayer.value.pause();
+          }
+        }
+      },
+      { threshold: 0.5 } // Trigger when 50% visible
+    );
+    intersectionObserver.observe(cardContainer.value);
+  }
+});
+
+onUnmounted(() => {
+  if (intersectionObserver && cardContainer.value) {
+    intersectionObserver.unobserve(cardContainer.value);
+    intersectionObserver.disconnect();
+  }
+});
+
+watch(
+  () => props.note.id,
+  () => {
+    if (videoPlayer.value) {
+      videoPlayer.value.currentTime = props.note.startTime;
+    }
+  }
+);
+
+const onVideoPlay = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.addEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const onVideoPause = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.removeEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const checkEndTime = () => {
+  if (videoPlayer.value && videoPlayer.value.currentTime >= props.note.endTime) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+};
+
+const seekTo = (time: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = time;
+    videoPlayer.value.play();
+  }
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+const startEditDescription = () => {
+  editingField.value = 'description';
+  originalValue.value = props.note.description;
+  editingValue.value = props.note.description;
+  nextTick(() => {
+    const inputs = document.querySelectorAll('.description .edit-input');
+    if (inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
+  });
+};
+
+const startEditField = (field: string) => {
+  editingField.value = field;
+  const value = props.note[field as keyof typeof props.note];
+  originalValue.value = value;
+  editingValue.value = field === 'startTime' || field === 'endTime' ? String(value) : String(value);
+  nextTick(() => {
+    editInputRef.value?.focus();
+  });
+};
+
+const saveDescription = () => {
+  if (editingField.value === 'description' && editingValue.value !== originalValue.value) {
+    props.note.description = editingValue.value;
+  }
+  editingField.value = null;
+  editingValue.value = '';
+};
+
+const saveField = (field: string) => {
+  if (editingValue.value === '') {
+    cancelEdit();
+    return;
+  }
+
+  if (field === 'startTime' || field === 'endTime' || field === 'instance') {
+    const numValue = field === 'instance' ? parseInt(editingValue.value) : parseFloat(editingValue.value);
+    if (!isNaN(numValue)) {
+      props.note[field as keyof typeof props.note] = numValue;
+    }
+  } else {
+    props.note[field as keyof typeof props.note] = editingValue.value;
+  }
+  
+  editingField.value = null;
+  editingValue.value = '';
+};
+
+const cancelEdit = () => {
+  editingField.value = null;
+  editingValue.value = '';
+  originalValue.value = null;
+};
+</script>
+
+<style scoped lang="scss">
+.note-card {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      p {
+        color: white;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+    }
+  }
+
+  .metadata-section {
+    padding: 16px;
+    background: #1a1a1a;
+    color: white;
+
+    .description {
+      margin: 0 0 12px 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+
+      &.editable {
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .display-text {
+          display: block;
+        }
+
+        .edit-input {
+          width: 100%;
+          background: #333;
+          border: 2px solid #1976d2;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 1rem;
+          font-weight: 600;
+          font-family: inherit;
+
+          &:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+          }
+        }
+      }
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      font-size: 0.75rem;
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+
+        &.editable-item {
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: background-color 0.2s ease;
+
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+          }
+        }
+
+        .label-with-chip {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 4px;
+        }
+
+        .label {
+          color: #999;
+          font-weight: 500;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          flex: 1;
+        }
+
+        .value {
+          color: #fff;
+          font-weight: 400;
+          font-size: 0.8rem;
+        }
+
+        .edit-input {
+          background: #333;
+          border: 2px solid #1976d2;
+          color: white;
+          padding: 4px 6px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: 400;
+          font-family: inherit;
+          width: 100%;
+
+          &:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+          }
+        }
+      }
+    }
+  }
+}
+</style>

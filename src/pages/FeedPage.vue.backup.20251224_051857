@@ -1,0 +1,281 @@
+<template>
+  <q-page class="feed-page">
+    <!-- Tab bar for description groups -->
+    <div class="tab-bar">
+      <div class="tabs-scroll">
+        <button
+          v-for="group in uniqueGroups"
+          :key="group"
+          :class="['tab', { active: currentGroup === group }]"
+          @click="switchToGroup(group)"
+        >
+          {{ group }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable feed -->
+    <div class="feed-scroll" ref="feedContainer">
+      <div class="feed-content">
+        <NoteCard
+          v-for="note in filteredNotes"
+          :key="note.id"
+          :note="note"
+          class="feed-card"
+        />
+      </div>
+    </div>
+
+    <!-- Position indicator -->
+    <div class="position-badge">
+      <q-badge color="primary" text-color="white">
+        {{ currentIndex + 1 }} / {{ filteredNotes.length }}
+      </q-badge>
+    </div>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, computed } from 'vue';
+import NoteCard from 'components/NoteCard.vue';
+import { useNotesStore } from 'stores/notesStore';
+
+const notesStore = useNotesStore();
+const feedContainer = ref<HTMLElement | null>(null);
+const currentGroup = ref<string>('');
+const currentIndex = ref(0);
+const threshold = 50;
+let touchStartX = 0;
+let touchStartY = 0;
+
+// Get unique description groups
+const uniqueGroups = computed(() => {
+  const groups = new Set(notesStore.notes.map(n => n.descriptionGroup));
+  return Array.from(groups);
+});
+
+// Filter notes by current group
+const filteredNotes = computed(() => {
+  if (!currentGroup.value) return notesStore.notes;
+  return notesStore.notes.filter(n => n.descriptionGroup === currentGroup.value);
+});
+
+// Initialize with first group
+onMounted(() => {
+  if (uniqueGroups.value.length > 0) {
+    currentGroup.value = uniqueGroups.value[0];
+  }
+  
+  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('touchstart', handleTouchStart);
+  window.addEventListener('touchend', handleTouchEnd);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('touchstart', handleTouchStart);
+  window.removeEventListener('touchend', handleTouchEnd);
+});
+
+// Switch to different group (tab)
+const switchToGroup = (group: string) => {
+  currentGroup.value = group;
+  currentIndex.value = 0;
+  scrollToTop();
+};
+
+const scrollToTop = () => {
+  if (feedContainer.value) {
+    feedContainer.value.scrollTop = 0;
+  }
+};
+
+// Scroll to next/prev card
+const scrollToCard = (delta: number) => {
+  if (feedContainer.value) {
+    const cardHeight = 400; // Approximate card height
+    feedContainer.value.scrollBy({
+      top: delta * cardHeight,
+      behavior: 'smooth'
+    });
+    currentIndex.value = Math.max(0, currentIndex.value + delta);
+  }
+};
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  switch (e.key) {
+    case 'ArrowUp':
+    case 'k':
+      scrollToCard(-1);
+      break;
+    case 'ArrowDown':
+    case 'j':
+      scrollToCard(1);
+      break;
+    case 'ArrowLeft':
+    case 'h':
+      // Switch to prev group
+      const currentIdx = uniqueGroups.value.indexOf(currentGroup.value);
+      if (currentIdx > 0) {
+        switchToGroup(uniqueGroups.value[currentIdx - 1]);
+      }
+      break;
+    case 'ArrowRight':
+    case 'l':
+      // Switch to next group
+      const idx = uniqueGroups.value.indexOf(currentGroup.value);
+      if (idx < uniqueGroups.value.length - 1) {
+        switchToGroup(uniqueGroups.value[idx + 1]);
+      }
+      break;
+  }
+};
+
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+};
+
+const handleTouchEnd = (e: TouchEvent) => {
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+
+  const diffX = touchStartX - touchEndX;
+  const diffY = touchStartY - touchEndY;
+
+  const absX = Math.abs(diffX);
+  const absY = Math.abs(diffY);
+
+  if (absX > absY && absX > threshold) {
+    // Horizontal swipe - switch group tabs
+    if (diffX > 0) {
+      // Swiped left - next group
+      const idx = uniqueGroups.value.indexOf(currentGroup.value);
+      if (idx < uniqueGroups.value.length - 1) {
+        switchToGroup(uniqueGroups.value[idx + 1]);
+      }
+    } else {
+      // Swiped right - prev group
+      const currentIdx = uniqueGroups.value.indexOf(currentGroup.value);
+      if (currentIdx > 0) {
+        switchToGroup(uniqueGroups.value[currentIdx - 1]);
+      }
+    }
+  }
+  // Vertical swipe handled by browser scroll
+};
+</script>
+
+<style scoped lang="scss">
+.feed-page {
+  background: #0f0f0f;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  .tab-bar {
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    padding: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    .tabs-scroll {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      width: 100%;
+      padding: 0 12px;
+      scroll-behavior: smooth;
+
+      &::-webkit-scrollbar {
+        height: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 3px;
+      }
+    }
+
+    .tab {
+      background: none;
+      border: none;
+      color: #999;
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+
+      &:hover {
+        color: #fff;
+      }
+
+      &.active {
+        color: #fff;
+        border-bottom-color: #1976d2;
+      }
+    }
+  }
+
+  .feed-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+
+      &:hover {
+        background: #555;
+      }
+    }
+  }
+
+  .feed-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .feed-card {
+    width: 100%;
+    max-width: 600px;
+    flex-shrink: 0;
+  }
+
+  .position-badge {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10;
+  }
+}
+</style>

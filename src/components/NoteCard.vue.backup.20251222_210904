@@ -1,0 +1,185 @@
+<template>
+  <div class="note-card q-pa-lg">
+    <div class="video-container">
+      <video
+        ref="videoPlayer"
+        class="video-player"
+        :src="note.videoPath"
+        controls
+        autoplay
+        muted
+        @play="onVideoPlay"
+        @pause="onVideoPause"
+      >
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <div class="note-content q-mt-md">
+      <div class="note-text q-mb-md">
+        <p class="text-h6">{{ note.text }}</p>
+      </div>
+
+      <div class="note-meta">
+        <div class="meta-item segment-highlight">
+          <span class="label">Start:</span>
+          <span class="value time">{{ formatTime(note.startTime) }}</span>
+        </div>
+        <div class="meta-item segment-highlight">
+          <span class="label">End:</span>
+          <span class="value time">{{ formatTime(note.endTime) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Date ID / Year:</span>
+          <span class="value">{{ note.specialDateId }} / {{ note.year }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Created:</span>
+          <span class="value">{{ formatDate(note.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import type { Note } from 'stores/notesStore';
+
+interface Props {
+  note: Note;
+}
+
+const props = defineProps<Props>();
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+
+onMounted(() => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+});
+
+watch(
+  () => props.note.id,
+  () => {
+    if (videoPlayer.value) {
+      videoPlayer.value.currentTime = props.note.startTime;
+      videoPlayer.value.play().catch(() => {
+        // Autoplay may be prevented by browser
+      });
+    }
+  }
+);
+
+const onVideoPlay = () => {
+  // Ensure video stops at endTime
+  if (videoPlayer.value) {
+    videoPlayer.value.addEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const onVideoPause = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.removeEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const checkEndTime = () => {
+  if (videoPlayer.value && videoPlayer.value.currentTime >= props.note.endTime) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+</script>
+
+<style scoped lang="scss">
+.note-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 0 auto;
+
+  .video-container {
+    width: 100%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+
+    .video-player {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  }
+
+  .note-content {
+    .note-text {
+      border-left: 4px solid #1976d2;
+      padding-left: 12px;
+
+      p {
+        margin: 0;
+        color: #333;
+      }
+    }
+
+    .note-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.875rem;
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        border-radius: 4px;
+
+        .label {
+          color: #666;
+          font-weight: 500;
+          margin-bottom: 4px;
+        }
+
+        .value {
+          color: #333;
+
+          &.time {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1976d2;
+          }
+        }
+
+        &.segment-highlight {
+          background: #e3f2fd;
+          border: 1px solid #1976d2;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .note-card {
+    .note-meta {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+</style>

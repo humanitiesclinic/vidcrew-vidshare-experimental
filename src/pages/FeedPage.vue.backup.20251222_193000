@@ -1,0 +1,156 @@
+<template>
+  <q-page class="feed-page">
+    <div class="feed-container">
+      <!-- Current Note Card -->
+      <transition name="slide" mode="out-in">
+        <NoteCard
+          v-if="notesStore.currentNote"
+          :key="notesStore.currentNote.id"
+          :note="notesStore.currentNote"
+        />
+      </transition>
+
+      <!-- Navigation Info -->
+      <div class="navigation-info q-mt-lg q-mb-lg">
+        <p class="text-center text-grey-7">
+          {{ notesStore.currentNoteIndex + 1 }} / {{ notesStore.totalNotes }}
+        </p>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="button-row q-mb-lg">
+        <q-btn
+          color="primary"
+          label="← Previous"
+          @click="notesStore.prevNote"
+          :disable="notesStore.currentNoteIndex === 0"
+          class="q-mr-md"
+        />
+        <q-btn
+          color="primary"
+          label="Next →"
+          @click="notesStore.nextNote"
+          :disable="notesStore.currentNoteIndex === notesStore.totalNotes - 1"
+        />
+      </div>
+
+      <!-- Keyboard & Swipe Hint -->
+      <div class="hint-text q-mb-md">
+        <p class="text-caption text-grey-6">
+          💡 Swipe up/down or use arrow keys to navigate
+        </p>
+      </div>
+    </div>
+  </q-page>
+</template>
+
+<script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
+import NoteCard from 'components/NoteCard.vue';
+import { useNotesStore } from 'stores/notesStore';
+
+const notesStore = useNotesStore();
+
+// Keyboard navigation
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'ArrowDown' || e.key === 'j') {
+    notesStore.nextNote();
+  } else if (e.key === 'ArrowUp' || e.key === 'k') {
+    notesStore.prevNote();
+  }
+};
+
+// Swipe detection using basic touch events
+let touchStartY = 0;
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartY = e.touches[0].clientY;
+};
+
+const handleTouchEnd = (e: TouchEvent) => {
+  const touchEndY = e.changedTouches[0].clientY;
+  const diff = touchStartY - touchEndY;
+  const threshold = 50; // Minimum swipe distance
+
+  if (Math.abs(diff) > threshold) {
+    if (diff > 0) {
+      // Swiped up -> next
+      notesStore.nextNote();
+    } else {
+      // Swiped down -> prev
+      notesStore.prevNote();
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('touchstart', handleTouchStart);
+  window.addEventListener('touchend', handleTouchEnd);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('touchstart', handleTouchStart);
+  window.removeEventListener('touchend', handleTouchEnd);
+});
+</script>
+
+<style scoped lang="scss">
+.feed-page {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  padding: 20px 0;
+
+  .feed-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+
+    .navigation-info {
+      p {
+        margin: 0;
+      }
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hint-text {
+      text-align: center;
+      p {
+        margin: 0;
+      }
+    }
+  }
+}
+
+// Slide transition
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-30px);
+}
+
+@media (max-width: 600px) {
+  .feed-page {
+    padding: 0;
+
+    .feed-container {
+      padding: 12px;
+    }
+  }
+}
+</style>

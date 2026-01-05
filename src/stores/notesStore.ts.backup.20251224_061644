@@ -1,0 +1,224 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+
+export interface VideoMetadata {
+  duration: number; // seconds
+  bitrate: string;
+  codec: string;
+  resolution: string;
+  frameRate: string;
+  audioCodec: string;
+  sampleRate: string;
+  channels: string;
+}
+
+export interface Note {
+  id: number;
+  classEvent: string; // e.g., "31-Dec", "BD", "CNY"
+  instance: number; // year or custom number
+  descriptionGroup: string; // group name for left/right nav
+  description: string; // main note text
+  videoPath: string;
+  startTime: number;
+  endTime: number;
+  metadata: VideoMetadata;
+  pointers: Array<{ time: number; label: string }>; // optional bookmarks
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const useNotesStore = defineStore('notes', () => {
+  const notes = ref<Note[]>([
+    {
+      id: 1,
+      classEvent: '31-Dec',
+      instance: 2024,
+      descriptionGroup: 'setup',
+      description: 'Screen recording segment one',
+      videoPath: '/videos/screen_recording.mov',
+      startTime: 30.0,
+      endTime: 120.0,
+      metadata: {
+        duration: 725.73,
+        bitrate: '2069 kb/s',
+        codec: 'h264 (Main)',
+        resolution: '1440x900',
+        frameRate: '14.57 fps',
+        audioCodec: 'aac (LC)',
+        sampleRate: '44100 Hz',
+        channels: 'stereo'
+      },
+      pointers: [
+        { time: 40, label: 'Start setup' },
+        { time: 100, label: 'Key moment' }
+      ],
+      createdAt: '2025-12-22T03:52:13Z',
+      updatedAt: '2025-12-22T03:52:13Z'
+    },
+    {
+      id: 2,
+      classEvent: '31-Dec',
+      instance: 2024,
+      descriptionGroup: 'preparation',
+      description: 'Screen recording segment two',
+      videoPath: '/videos/screen_recording.mov',
+      startTime: 250.0,
+      endTime: 400.0,
+      metadata: {
+        duration: 725.73,
+        bitrate: '2069 kb/s',
+        codec: 'h264 (Main)',
+        resolution: '1440x900',
+        frameRate: '14.57 fps',
+        audioCodec: 'aac (LC)',
+        sampleRate: '44100 Hz',
+        channels: 'stereo'
+      },
+      pointers: [],
+      createdAt: '2025-12-22T03:53:00Z',
+      updatedAt: '2025-12-22T03:53:00Z'
+    },
+    {
+      id: 3,
+      classEvent: 'BD',
+      instance: 2025,
+      descriptionGroup: 'setup',
+      description: 'iPhone video clip one',
+      videoPath: '/videos/iphone_clip.mp4',
+      startTime: 10.0,
+      endTime: 90.0,
+      metadata: {
+        duration: 369.78,
+        bitrate: '7390 kb/s',
+        codec: 'h264 (High)',
+        resolution: '888x1920',
+        frameRate: '41.97 fps',
+        audioCodec: 'aac (LC)',
+        sampleRate: '44100 Hz',
+        channels: 'stereo'
+      },
+      pointers: [
+        { time: 20, label: 'Camera angle' }
+      ],
+      createdAt: '2025-12-16T11:00:00Z',
+      updatedAt: '2025-12-16T11:00:00Z'
+    },
+    {
+      id: 4,
+      classEvent: 'BD',
+      instance: 2025,
+      descriptionGroup: 'execution',
+      description: 'iPhone video clip two',
+      videoPath: '/videos/iphone_clip.mp4',
+      startTime: 150.0,
+      endTime: 280.0,
+      metadata: {
+        duration: 369.78,
+        bitrate: '7390 kb/s',
+        codec: 'h264 (High)',
+        resolution: '888x1920',
+        frameRate: '41.97 fps',
+        audioCodec: 'aac (LC)',
+        sampleRate: '44100 Hz',
+        channels: 'stereo'
+      },
+      pointers: [],
+      createdAt: '2025-12-16T11:10:00Z',
+      updatedAt: '2025-12-16T11:10:00Z'
+    }
+  ]);
+
+  const currentNoteIndex = ref(0);
+
+  const currentNote = computed(() => notes.value[currentNoteIndex.value] || null);
+
+  const totalNotes = computed(() => notes.value.length);
+
+  function addNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) {
+    const newNote: Note = {
+      ...note,
+      id: Math.max(...notes.value.map(n => n.id), 0) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    notes.value.push(newNote);
+    return newNote;
+  }
+
+  function updateNote(id: number, updates: Partial<Omit<Note, 'id' | 'createdAt'>>) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value[index] = {
+        ...notes.value[index],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  function deleteNote(id: number) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value.splice(index, 1);
+      if (currentNoteIndex.value >= notes.value.length) {
+        currentNoteIndex.value = Math.max(0, notes.value.length - 1);
+      }
+    }
+  }
+
+  function goToNote(index: number) {
+    if (index >= 0 && index < notes.value.length) {
+      currentNoteIndex.value = index;
+    }
+  }
+
+  function nextNote() {
+    if (currentNoteIndex.value < notes.value.length - 1) {
+      currentNoteIndex.value++;
+    }
+  }
+
+  function prevNote() {
+    if (currentNoteIndex.value > 0) {
+      currentNoteIndex.value--;
+    }
+  }
+
+  // Left/Right navigation: find prev/next note with same descriptionGroup
+  function prevInGroup() {
+    if (!currentNote.value) return;
+    const currentGroup = currentNote.value.descriptionGroup;
+    for (let i = currentNoteIndex.value - 1; i >= 0; i--) {
+      if (notes.value[i].descriptionGroup === currentGroup) {
+        currentNoteIndex.value = i;
+        return;
+      }
+    }
+  }
+
+  function nextInGroup() {
+    if (!currentNote.value) return;
+    const currentGroup = currentNote.value.descriptionGroup;
+    for (let i = currentNoteIndex.value + 1; i < notes.value.length; i++) {
+      if (notes.value[i].descriptionGroup === currentGroup) {
+        currentNoteIndex.value = i;
+        return;
+      }
+    }
+  }
+
+  return {
+    notes,
+    currentNoteIndex,
+    currentNote,
+    totalNotes,
+    addNote,
+    updateNote,
+    deleteNote,
+    goToNote,
+    nextNote,
+    prevNote,
+    prevInGroup,
+    nextInGroup
+  };
+});

@@ -1,0 +1,290 @@
+<template>
+  <div class="note-card fullscreen-card">
+    <!-- Full-screen video -->
+    <div class="video-container">
+      <video
+        ref="videoPlayer"
+        class="video-player"
+        :src="note.videoPath"
+        controls
+        autoplay
+        muted
+        @play="onVideoPlay"
+        @pause="onVideoPause"
+      >
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <!-- Bottom metadata overlay -->
+    <div class="metadata-overlay">
+      <!-- Description -->
+      <div class="description-section">
+        <h2 class="q-mt-none q-mb-sm">{{ note.description }}</h2>
+        <p class="q-my-sm text-caption">
+          <q-chip size="sm" color="primary" text-color="white">
+            {{ note.classEvent }} {{ note.instance }}
+          </q-chip>
+          <q-chip size="sm" color="secondary" text-color="white">
+            {{ note.descriptionGroup }}
+          </q-chip>
+        </p>
+      </div>
+
+      <!-- Expandable metadata -->
+      <q-expansion-item
+        icon="info"
+        label="Video Info"
+        header-class="text-white"
+        expand-icon-class="text-white"
+      >
+        <q-card class="metadata-card">
+          <q-card-section>
+            <div class="metadata-grid">
+              <div class="meta-row">
+                <span class="meta-label">Duration:</span>
+                <span class="meta-value">{{ formatTime(note.metadata.duration) }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Resolution:</span>
+                <span class="meta-value">{{ note.metadata.resolution }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Codec:</span>
+                <span class="meta-value">{{ note.metadata.codec }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Frame Rate:</span>
+                <span class="meta-value">{{ note.metadata.frameRate }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Bitrate:</span>
+                <span class="meta-value">{{ note.metadata.bitrate }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Audio Codec:</span>
+                <span class="meta-value">{{ note.metadata.audioCodec }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Sample Rate:</span>
+                <span class="meta-value">{{ note.metadata.sampleRate }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Channels:</span>
+                <span class="meta-value">{{ note.metadata.channels }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Segment:</span>
+                <span class="meta-value">{{ formatTime(note.startTime) }} - {{ formatTime(note.endTime) }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Created:</span>
+                <span class="meta-value">{{ formatDate(note.createdAt) }}</span>
+              </div>
+            </div>
+
+            <!-- Pointers -->
+            <div v-if="note.pointers.length" class="pointers-section q-mt-md">
+              <h4 class="q-my-sm">Bookmarks</h4>
+              <div class="pointers-list">
+                <q-chip
+                  v-for="pointer in note.pointers"
+                  :key="pointer.time"
+                  clickable
+                  @click="seekTo(pointer.time)"
+                  color="primary"
+                  text-color="white"
+                  class="q-mr-sm q-mb-sm"
+                >
+                  {{ formatTime(pointer.time) }} - {{ pointer.label }}
+                </q-chip>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-expansion-item>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import type { Note } from 'stores/notesStore';
+
+interface Props {
+  note: Note;
+}
+
+const props = defineProps<Props>();
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+
+onMounted(() => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+});
+
+watch(
+  () => props.note.id,
+  () => {
+    if (videoPlayer.value) {
+      videoPlayer.value.currentTime = props.note.startTime;
+      videoPlayer.value.play().catch(() => {
+        // Autoplay may be prevented by browser
+      });
+    }
+  }
+);
+
+const onVideoPlay = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.addEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const onVideoPause = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.removeEventListener('timeupdate', checkEndTime);
+  }
+};
+
+const checkEndTime = () => {
+  if (videoPlayer.value && videoPlayer.value.currentTime >= props.note.endTime) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = props.note.startTime;
+  }
+};
+
+const seekTo = (time: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = time;
+    videoPlayer.value.play();
+  }
+};
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const formatDate = (dateStr: string): string => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+</script>
+
+<style scoped lang="scss">
+.note-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  &.fullscreen-card {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .video-container {
+    flex: 1;
+    width: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .video-player {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  .metadata-overlay {
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,1) 100%);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px 20px 20px;
+    color: white;
+    max-height: 40vh;
+    overflow-y: auto;
+
+    .description-section {
+      h2 {
+        color: white;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+    }
+
+    .metadata-card {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.875rem;
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        .meta-label {
+          font-weight: 600;
+          color: #bbb;
+        }
+
+        .meta-value {
+          color: white;
+          text-align: right;
+        }
+      }
+    }
+
+    .pointers-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 12px;
+
+      h4 {
+        color: white;
+        margin: 12px 0 8px 0;
+      }
+
+      .pointers-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
+  }
+}
+
+:deep(.q-expansion-item__header) {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  padding: 12px !important;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+:deep(.q-chip) {
+  cursor: pointer !important;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+</style>
