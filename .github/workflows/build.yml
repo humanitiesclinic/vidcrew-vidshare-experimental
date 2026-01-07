@@ -1,0 +1,96 @@
+name: Build & Commit
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx quasar build -m pwa
+      - name: Deploy PWA to Netlify
+        run: |
+          npm install -g netlify-cli
+          netlify deploy --prod --dir=dist/pwa
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  # build-capacitor-android:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #     - run: npm ci
+  #     - run: npx quasar build -m capacitor -T android
+
+  # build-capacitor-ios:
+  #   runs-on: macos-12
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #     - run: npm ci
+  #     - run: npx quasar build -m capacitor -T ios
+
+  # build-electron-ubuntu:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #     - run: npm ci
+  #     - run: npx quasar build -m electron -T all -A all
+
+  build-electron-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx quasar build -m electron -T all -A all
+
+  # build-electron-windows:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #     - run: npm ci
+  #     - run: npx quasar build -m electron -T all -A all
+
+  commit-all:
+    needs: [build-pwa, build-electron-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Build: PWA, Electron [tag: ${{ github.ref_name }}]" -m "Co-Authored-By: Warp <agent@warp.dev>" || true
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
