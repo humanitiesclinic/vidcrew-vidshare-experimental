@@ -17,8 +17,12 @@ jobs:
       - run: npx quasar build -m pwa
       - name: Deploy PWA to Netlify
         run: |
-          npm install -g netlify-cli
-          netlify deploy --prod --dir=dist/pwa
+          npm install -g netlify-cli@23.12.2
+          if [ -n "$NETLIFY_SITE_ID" ]; then
+            netlify deploy --prod --dir=dist/pwa
+          else
+            netlify deploy --create-site ${{ github.event.repository.name }} --dir=dist/pwa --prod
+          fi
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
