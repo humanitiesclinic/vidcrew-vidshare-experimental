@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '22'
-          cache: 'npm'
       - run: npm install
       - run: npx quasar build -m pwa
       - name: Deploy PWA to Netlify
@@ -64,7 +63,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '22'
-          cache: 'npm'
       - run: npm install
       - run: npx quasar build -m electron -T all -A all
 
