@@ -14,8 +14,10 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - run: npm ci
-      - run: npx quasar build -m pwa
+      - run: npm install
+      - run: npx quasar build -m capacitor -T ios
+ capacitor -T android
+ pwa
       - name: Deploy PWA to Netlify
         run: |
           npm install -g netlify-cli
@@ -65,7 +67,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - run: npm ci
+      - run: npm install
       - run: npx quasar build -m electron -T all -A all
 
   # build-electron-windows:
