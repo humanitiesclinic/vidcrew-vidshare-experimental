@@ -15,9 +15,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm install
-      - run: npx quasar build -m capacitor -T ios
- capacitor -T android
- pwa
+      - run: npx quasar build -m pwa
       - name: Deploy PWA to Netlify
         run: |
           npm install -g netlify-cli
