@@ -26,6 +26,15 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      - name: Commit PWA build
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Build: PWA [tag: ${{ github.ref_name }}]" -m "Co-Authored-By: Warp <agent@warp.dev>" || true
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # build-capacitor-android:
   #   runs-on: ubuntu-latest
@@ -61,6 +70,7 @@ jobs:
   #     - run: npx quasar build -m electron -T all -A all
 
   build-electron-macos:
+    needs: build-pwa
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -69,6 +79,15 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npx quasar build -m electron -T all -A all
+      - name: Commit Electron build
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Build: Electron [tag: ${{ github.ref_name }}]" -m "Co-Authored-By: Warp <agent@warp.dev>" || true
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # build-electron-windows:
   #   runs-on: windows-latest
@@ -81,18 +100,3 @@ jobs:
   #     - run: npm ci
   #     - run: npx quasar build -m electron -T all -A all
 
-  commit-all:
-    needs: [build-pwa, build-electron-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add .
-          git commit -m "Build: PWA, Electron [tag: ${{ github.ref_name }}]" -m "Co-Authored-By: Warp <agent@warp.dev>" || true
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
