@@ -18,7 +18,13 @@ jobs:
       - name: Deploy PWA to Netlify
         run: |
           npm install -g netlify-cli@23.12.2
-          netlify deploy --alias=${{ github.event.repository.name }} --dir=dist/pwa
+          if ! netlify deploy --prod --create-site ${{ github.event.repository.name }} --dir=dist/pwa 2>&1 | tee deploy.log; then
+            if grep -q "already taken" deploy.log; then
+              netlify deploy --prod --site=${{ github.event.repository.name }} --dir=dist/pwa
+            else
+              exit 1
+            fi
+          fi
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       - name: Commit PWA build
