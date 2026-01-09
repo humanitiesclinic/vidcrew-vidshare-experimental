@@ -19,12 +19,12 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npx quasar build -m pwa
-      - name: Deploy PWA to Netlify
+      - name: Deploy PWA to Surge
         run: |
-          npm install -g netlify-cli@23.12.2
-          netlify deploy --prod --site=zquasar-revoluj-starter --dir=dist/pwa
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          npm install -g surge@0.24.6
+          export SURGE_TOKEN=${{ secrets.SURGE_TOKEN }}
+          surge dist/pwa --domain=zquasar-revoluj-starter.huclin.surge.sh
+          surge dist/pwa --domain=zquasar-revoluj-starter.surge.sh
       - name: Commit PWA build
         run: |
           git config user.name "GitHub Actions"
