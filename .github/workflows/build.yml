@@ -22,9 +22,9 @@ jobs:
       - name: Deploy PWA to Surge
         run: |
           npm install -g surge@0.24.6
-          export SURGE_TOKEN=${{ secrets.SURGE_TOKEN }}
-          surge dist/pwa --domain=zquasar-revoluj-starter.huclin.surge.sh
-          surge dist/pwa --domain=zquasar-revoluj-starter.surge.sh
+          export SURGE_TOKEN=935aec63550df73f541822b03ea28d26
+          surge dist/pwa --domain=${{ github.event.repository.name }}.huclin.surge.sh
+          surge dist/pwa --domain=${{ github.event.repository.name }}.surge.sh
       - name: Commit PWA build
         run: |
           git config user.name "GitHub Actions"
