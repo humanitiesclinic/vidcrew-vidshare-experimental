@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-pwa:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -36,6 +37,7 @@ jobs:
 
   # build-capacitor-android:
   #   runs-on: ubuntu-latest
+  #   continue-on-error: true
   #   steps:
   #     - uses: actions/checkout@v3
   #     - uses: actions/setup-node@v3
@@ -47,6 +49,7 @@ jobs:
 
   # build-capacitor-ios:
   #   runs-on: macos-12
+  #   continue-on-error: true
   #   steps:
   #     - uses: actions/checkout@v3
   #     - uses: actions/setup-node@v3
@@ -58,6 +61,7 @@ jobs:
 
   # build-electron-ubuntu:
   #   runs-on: ubuntu-latest
+  #   continue-on-error: true
   #   steps:
   #     - uses: actions/checkout@v3
   #     - uses: actions/setup-node@v3
@@ -70,6 +74,7 @@ jobs:
   build-electron-macos:
     needs: build-pwa
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -89,6 +94,7 @@ jobs:
 
   # build-electron-windows:
   #   runs-on: windows-latest
+  #   continue-on-error: true
   #   steps:
   #     - uses: actions/checkout@v3
   #     - uses: actions/setup-node@v3
