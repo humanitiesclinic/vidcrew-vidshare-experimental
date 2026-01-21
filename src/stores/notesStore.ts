@@ -23,35 +23,18 @@ export interface Note {
   endTime: number;
   metadata: VideoMetadata;
   pointers: Array<{ time: number; label: string }>; // optional bookmarks
+  transcript?: string; // optional transcript from video
   createdAt: string;
   updatedAt: string;
 }
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([
-    // 31-Dec entries
-    { id: 1, classEvent: '31-Dec', instance: 2022, descriptionGroup: 'setup', description: 'Setup 2022', videoPath: '/videos/screen_recording.mov', startTime: 10, endTime: 80, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2022-12-31T10:00:00Z', updatedAt: '2022-12-31T10:00:00Z' },
-    { id: 2, classEvent: '31-Dec', instance: 2022, descriptionGroup: 'preparation', description: 'Preparation 2022', videoPath: '/videos/screen_recording.mov', startTime: 100, endTime: 200, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2022-12-31T10:30:00Z', updatedAt: '2022-12-31T10:30:00Z' },
-    { id: 3, classEvent: '31-Dec', instance: 2022, descriptionGroup: 'execution', description: 'Execution 2022', videoPath: '/videos/screen_recording.mov', startTime: 220, endTime: 350, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2022-12-31T11:00:00Z', updatedAt: '2022-12-31T11:00:00Z' },
-    { id: 4, classEvent: '31-Dec', instance: 2023, descriptionGroup: 'setup', description: 'Setup 2023', videoPath: '/videos/iphone_clip.mp4', startTime: 15, endTime: 75, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-12-31T10:00:00Z', updatedAt: '2023-12-31T10:00:00Z' },
-    { id: 5, classEvent: '31-Dec', instance: 2023, descriptionGroup: 'preparation', description: 'Preparation 2023', videoPath: '/videos/iphone_clip.mp4', startTime: 100, endTime: 180, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-12-31T10:45:00Z', updatedAt: '2023-12-31T10:45:00Z' },
-    { id: 6, classEvent: '31-Dec', instance: 2023, descriptionGroup: 'execution', description: 'Execution 2023', videoPath: '/videos/iphone_clip.mp4', startTime: 200, endTime: 330, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-12-31T11:30:00Z', updatedAt: '2023-12-31T11:30:00Z' },
-    { id: 7, classEvent: '31-Dec', instance: 2024, descriptionGroup: 'setup', description: 'Setup 2024', videoPath: '/videos/screen_recording.mov', startTime: 30, endTime: 120, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [{ time: 40, label: 'Start setup' }], createdAt: '2024-12-31T10:00:00Z', updatedAt: '2024-12-31T10:00:00Z' },
-    { id: 8, classEvent: '31-Dec', instance: 2024, descriptionGroup: 'preparation', description: 'Preparation 2024', videoPath: '/videos/screen_recording.mov', startTime: 250, endTime: 400, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-12-31T10:45:00Z', updatedAt: '2024-12-31T10:45:00Z' },
-    { id: 9, classEvent: '31-Dec', instance: 2024, descriptionGroup: 'execution', description: 'Execution 2024', videoPath: '/videos/screen_recording.mov', startTime: 450, endTime: 600, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-12-31T11:30:00Z', updatedAt: '2024-12-31T11:30:00Z' },
-    { id: 10, classEvent: '31-Dec', instance: 2025, descriptionGroup: 'setup', description: 'Setup 2025', videoPath: '/videos/iphone_clip.mp4', startTime: 20, endTime: 100, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2025-12-31T10:00:00Z', updatedAt: '2025-12-31T10:00:00Z' },
-    // BD entries
-    { id: 11, classEvent: 'BD', instance: 2023, descriptionGroup: 'setup', description: 'BD Setup 2023', videoPath: '/videos/iphone_clip.mp4', startTime: 10, endTime: 90, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-01-15T09:00:00Z', updatedAt: '2023-01-15T09:00:00Z' },
-    { id: 12, classEvent: 'BD', instance: 2023, descriptionGroup: 'execution', description: 'BD Execution 2023', videoPath: '/videos/iphone_clip.mp4', startTime: 120, endTime: 250, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-01-15T10:30:00Z', updatedAt: '2023-01-15T10:30:00Z' },
-    { id: 13, classEvent: 'BD', instance: 2024, descriptionGroup: 'setup', description: 'BD Setup 2024', videoPath: '/videos/screen_recording.mov', startTime: 50, endTime: 150, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-01-15T09:00:00Z', updatedAt: '2024-01-15T09:00:00Z' },
-    { id: 14, classEvent: 'BD', instance: 2024, descriptionGroup: 'execution', description: 'BD Execution 2024', videoPath: '/videos/screen_recording.mov', startTime: 200, endTime: 350, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-01-15T10:45:00Z', updatedAt: '2024-01-15T10:45:00Z' },
-    { id: 15, classEvent: 'BD', instance: 2025, descriptionGroup: 'setup', description: 'BD Setup 2025', videoPath: '/videos/iphone_clip.mp4', startTime: 15, endTime: 95, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2025-01-15T09:00:00Z', updatedAt: '2025-01-15T09:00:00Z' },
-    // CNY entries
-    { id: 16, classEvent: 'CNY', instance: 2023, descriptionGroup: 'preparation', description: 'CNY Prep 2023', videoPath: '/videos/screen_recording.mov', startTime: 100, endTime: 250, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-01-22T14:00:00Z', updatedAt: '2023-01-22T14:00:00Z' },
-    { id: 17, classEvent: 'CNY', instance: 2024, descriptionGroup: 'preparation', description: 'CNY Prep 2024', videoPath: '/videos/iphone_clip.mp4', startTime: 50, endTime: 200, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-02-10T14:00:00Z', updatedAt: '2024-02-10T14:00:00Z' },
-    // National Day entries
-    { id: 18, classEvent: 'National Day', instance: 2023, descriptionGroup: 'celebration', description: 'Celebration 2023', videoPath: '/videos/screen_recording.mov', startTime: 200, endTime: 400, metadata: { duration: 725.73, bitrate: '2069 kb/s', codec: 'h264 (Main)', resolution: '1440x900', frameRate: '14.57 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2023-08-09T15:00:00Z', updatedAt: '2023-08-09T15:00:00Z' },
-    { id: 19, classEvent: 'National Day', instance: 2024, descriptionGroup: 'celebration', description: 'Celebration 2024', videoPath: '/videos/iphone_clip.mp4', startTime: 100, endTime: 300, metadata: { duration: 369.78, bitrate: '7390 kb/s', codec: 'h264 (High)', resolution: '888x1920', frameRate: '41.97 fps', audioCodec: 'aac (LC)', sampleRate: '44100 Hz', channels: 'stereo' }, pointers: [], createdAt: '2024-08-09T15:00:00Z', updatedAt: '2024-08-09T15:00:00Z' }
+    // Birthday 2025 - Feb 8-9 (SRT test data)
+    { id: 1, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'event_introduction', description: 'Speaker explains the significance of Feb 8, 2025 - it\'s past midnight, making it the current date. Discusses it being the last day before a number changes for them.', videoPath: '/videos/C3045.MP4', startTime: 46.5, endTime: 127, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 46.5, label: 'Time check - past 12 midnight' }, { time: 69, label: 'Date confirmed: 8th February 25' }, { time: 122, label: 'Significance explained: last day before age increase' }], transcript: 'OK, so already past 12 midnight, so today is... [discussion about date and age significance]', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 2, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'event_context', description: 'Discussion of Chingay festival (Jan 5) coinciding with birthday. Mentions custom t-shirts made for Feb 8-9 and SG60 celebration. References being at F1 Pit Building at midnight.', videoPath: '/videos/C3045.MP4', startTime: 127, endTime: 191, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 143, label: 'Chingay Jan 5 mentioned' }, { time: 151, label: 'SG60 reference' }, { time: 159, label: 'F1 Pit Building event at midnight' }, { time: 191, label: 'Custom t-shirts mentioned' }], transcript: 'It\'s also the last day for Chingay, January 5... we will be at the Chingay 25 event at the F1 Pit Building outside...', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 3, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'practical_details', description: 'Current time is 1 A.M. Unplanned activities. Discussion of perspiration/heat. Plans to eat and show themselves. Mentions uncertainty about cake arrival timing.', videoPath: '/videos/C3045.MP4', startTime: 195, endTime: 275, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 203, label: 'Current time: 1 A.M.' }, { time: 207, label: 'Unplanned activities' }, { time: 223, label: 'Perspiring heavily' }, { time: 251, label: 'Cake arrival uncertain' }], transcript: 'And what\'s the time now? 1 A.M. and all this I did not plan to do... There\'s supposed to be a cake...', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 4, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'calendar_significance', description: 'Speaker emphasizes that Feb 8-9, 2025 falls on weekend (Saturday-Sunday). It\'s the last Saturday of Chinese New Year. Rare occurrence (once every 5-6 years) for birthday to align with CNY weekend.', videoPath: '/videos/C3045.MP4', startTime: 295, endTime: 323, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 303, label: 'Last Saturday of Chinese New Year' }, { time: 311, label: 'Feb 8-9 falls on weekend' }, { time: 315, label: 'Saturday and Sunday confirmation' }, { time: 319, label: 'Happens once in 5-6 years' }], transcript: '8th of February 25 is also the last Saturday of Chinese New Year... Both of them are on the weekend, Saturday and Sunday. Only once in five to six years that will happen.', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' }
   ]);
 
   const currentNoteIndex = ref(0);
@@ -78,7 +61,7 @@ export const useNotesStore = defineStore('notes', () => {
         ...notes.value[index],
         ...updates,
         updatedAt: new Date().toISOString()
-      };
+      } as Note;
     }
   }
 
@@ -115,7 +98,9 @@ export const useNotesStore = defineStore('notes', () => {
     if (!currentNote.value) return;
     const currentGroup = currentNote.value.descriptionGroup;
     for (let i = currentNoteIndex.value - 1; i >= 0; i--) {
-      if (notes.value[i].descriptionGroup === currentGroup) {
+      const candidate = notes.value[i];
+      if (!candidate) continue;
+      if (candidate.descriptionGroup === currentGroup) {
         currentNoteIndex.value = i;
         return;
       }
@@ -126,7 +111,9 @@ export const useNotesStore = defineStore('notes', () => {
     if (!currentNote.value) return;
     const currentGroup = currentNote.value.descriptionGroup;
     for (let i = currentNoteIndex.value + 1; i < notes.value.length; i++) {
-      if (notes.value[i].descriptionGroup === currentGroup) {
+      const candidate = notes.value[i];
+      if (!candidate) continue;
+      if (candidate.descriptionGroup === currentGroup) {
         currentNoteIndex.value = i;
         return;
       }

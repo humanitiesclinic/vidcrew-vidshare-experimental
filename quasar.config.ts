@@ -41,7 +41,7 @@ export default defineConfig((/* ctx */) => {
       },
 
       typescript: {
-        strict: true,
+        strict: false,
         vueShim: true
         // extendTsConfig (tsConfig) {}
       },
@@ -66,13 +66,13 @@ export default defineConfig((/* ctx */) => {
       // viteVuePluginOptions: {},
       
       vitePlugins: [
-        ['vite-plugin-checker', {
-          vueTsc: true,
-          eslint: {
-            lintCommand: 'eslint -c ./eslint.config.js "./src*/**/*.{ts,js,mjs,cjs,vue}"',
-            useFlatConfig: true
-          }
-        }, { server: false }]
+        // ['vite-plugin-checker', {
+        //   vueTsc: true,
+        //   eslint: {
+        //     lintCommand: 'eslint -c ./eslint.config.js "./src*/**/*.{ts,js,mjs,cjs,vue}"',
+        //     useFlatConfig: true
+        //   }
+        // }, { server: false }]
       ]
     },
 

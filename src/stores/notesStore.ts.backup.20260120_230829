@@ -1,0 +1,133 @@
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+
+export interface VideoMetadata {
+  duration: number; // seconds
+  bitrate: string;
+  codec: string;
+  resolution: string;
+  frameRate: string;
+  audioCodec: string;
+  sampleRate: string;
+  channels: string;
+}
+
+export interface Note {
+  id: number;
+  classEvent: string; // e.g., "31-Dec", "BD", "CNY"
+  instance: number; // year or custom number
+  descriptionGroup: string; // group name for left/right nav
+  description: string; // main note text
+  videoPath: string;
+  startTime: number;
+  endTime: number;
+  metadata: VideoMetadata;
+  pointers: Array<{ time: number; label: string }>; // optional bookmarks
+  transcript?: string; // optional transcript from video
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const useNotesStore = defineStore('notes', () => {
+  const notes = ref<Note[]>([
+    // Birthday 2025 - Feb 8-9 (SRT test data)
+    { id: 1, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'event_introduction', description: 'Speaker explains the significance of Feb 8, 2025 - it\'s past midnight, making it the current date. Discusses it being the last day before a number changes for them.', videoPath: '/videos/YSGENN04HGFKGHL0mov.mov', startTime: 46.5, endTime: 127, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 46.5, label: 'Time check - past 12 midnight' }, { time: 69, label: 'Date confirmed: 8th February 25' }, { time: 122, label: 'Significance explained: last day before age increase' }], transcript: 'OK, so already past 12 midnight, so today is... [discussion about date and age significance]', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 2, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'event_context', description: 'Discussion of Chingay festival (Jan 5) coinciding with birthday. Mentions custom t-shirts made for Feb 8-9 and SG60 celebration. References being at F1 Pit Building at midnight.', videoPath: '/videos/YSGENN04HGFKGHL0mov.mov', startTime: 127, endTime: 191, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 143, label: 'Chingay Jan 5 mentioned' }, { time: 151, label: 'SG60 reference' }, { time: 159, label: 'F1 Pit Building event at midnight' }, { time: 191, label: 'Custom t-shirts mentioned' }], transcript: 'It\'s also the last day for Chingay, January 5... we will be at the Chingay 25 event at the F1 Pit Building outside...', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 3, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'practical_details', description: 'Current time is 1 A.M. Unplanned activities. Discussion of perspiration/heat. Plans to eat and show themselves. Mentions uncertainty about cake arrival timing.', videoPath: '/videos/YSGENN04HGFKGHL0mov.mov', startTime: 195, endTime: 275, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 203, label: 'Current time: 1 A.M.' }, { time: 207, label: 'Unplanned activities' }, { time: 223, label: 'Perspiring heavily' }, { time: 251, label: 'Cake arrival uncertain' }], transcript: 'And what\'s the time now? 1 A.M. and all this I did not plan to do... There\'s supposed to be a cake...', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' },
+    { id: 4, classEvent: 'Birthday', instance: 2025, descriptionGroup: 'calendar_significance', description: 'Speaker emphasizes that Feb 8-9, 2025 falls on weekend (Saturday-Sunday). It\'s the last Saturday of Chinese New Year. Rare occurrence (once every 5-6 years) for birthday to align with CNY weekend.', videoPath: '/videos/YSGENN04HGFKGHL0mov.mov', startTime: 295, endTime: 323, metadata: { duration: 393, bitrate: '5000 kb/s', codec: 'h264', resolution: '1920x1080', frameRate: '30 fps', audioCodec: 'aac', sampleRate: '48000 Hz', channels: 'stereo' }, pointers: [{ time: 303, label: 'Last Saturday of Chinese New Year' }, { time: 311, label: 'Feb 8-9 falls on weekend' }, { time: 315, label: 'Saturday and Sunday confirmation' }, { time: 319, label: 'Happens once in 5-6 years' }], transcript: '8th of February 25 is also the last Saturday of Chinese New Year... Both of them are on the weekend, Saturday and Sunday. Only once in five to six years that will happen.', createdAt: '2025-02-08T01:00:00Z', updatedAt: '2025-02-08T01:00:00Z' }
+  ]);
+
+  const currentNoteIndex = ref(0);
+
+  const currentNote = computed(() => notes.value[currentNoteIndex.value] || null);
+
+  const totalNotes = computed(() => notes.value.length);
+
+  function addNote(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) {
+    const newNote: Note = {
+      ...note,
+      id: Math.max(...notes.value.map(n => n.id), 0) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    notes.value.push(newNote);
+    return newNote;
+  }
+
+  function updateNote(id: number, updates: Partial<Omit<Note, 'id' | 'createdAt'>>) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value[index] = {
+        ...notes.value[index],
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  function deleteNote(id: number) {
+    const index = notes.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes.value.splice(index, 1);
+      if (currentNoteIndex.value >= notes.value.length) {
+        currentNoteIndex.value = Math.max(0, notes.value.length - 1);
+      }
+    }
+  }
+
+  function goToNote(index: number) {
+    if (index >= 0 && index < notes.value.length) {
+      currentNoteIndex.value = index;
+    }
+  }
+
+  function nextNote() {
+    if (currentNoteIndex.value < notes.value.length - 1) {
+      currentNoteIndex.value++;
+    }
+  }
+
+  function prevNote() {
+    if (currentNoteIndex.value > 0) {
+      currentNoteIndex.value--;
+    }
+  }
+
+  // Left/Right navigation: find prev/next note with same descriptionGroup
+  function prevInGroup() {
+    if (!currentNote.value) return;
+    const currentGroup = currentNote.value.descriptionGroup;
+    for (let i = currentNoteIndex.value - 1; i >= 0; i--) {
+      if (notes.value[i].descriptionGroup === currentGroup) {
+        currentNoteIndex.value = i;
+        return;
+      }
+    }
+  }
+
+  function nextInGroup() {
+    if (!currentNote.value) return;
+    const currentGroup = currentNote.value.descriptionGroup;
+    for (let i = currentNoteIndex.value + 1; i < notes.value.length; i++) {
+      if (notes.value[i].descriptionGroup === currentGroup) {
+        currentNoteIndex.value = i;
+        return;
+      }
+    }
+  }
+
+  return {
+    notes,
+    currentNoteIndex,
+    currentNote,
+    totalNotes,
+    addNote,
+    updateNote,
+    deleteNote,
+    goToNote,
+    nextNote,
+    prevNote,
+    prevInGroup,
+    nextInGroup
+  };
+});

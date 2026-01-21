@@ -49,7 +49,7 @@ const eventClasses = computed(() => {
 });
 
 const selectClass = (eventClass: { id: string; name: string; count: number }) => {
-  void router.push(`/feed/${eventClass.id}`);
+  router.push(`/feed/${eventClass.id}`);
 };
 </script>
 

@@ -59,6 +59,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import NoteCard from 'components/NoteCard.vue';
 import { useNotesStore } from 'stores/notesStore';
+import type { Note } from 'stores/notesStore';
 
 const route = useRoute();
 const router = useRouter();
@@ -155,7 +156,7 @@ const navigateLeft = () => {
     const prevCard = notesStore.notes.find(
       n => n.instance === prevInstance && n.descriptionGroup === category
     );
-    if (prevCard && prevInstance != null) {
+    if (prevCard) {
       currentInstance.value = prevInstance;
       currentCardId.value = prevCard.id;
       scrollToCard(0);
@@ -175,7 +176,7 @@ const navigateRight = () => {
     const nextCard = notesStore.notes.find(
       n => n.instance === nextInstance && n.descriptionGroup === category
     );
-    if (nextCard && nextInstance != null) {
+    if (nextCard) {
       currentInstance.value = nextInstance;
       currentCardId.value = nextCard.id;
       scrollToCard(0);

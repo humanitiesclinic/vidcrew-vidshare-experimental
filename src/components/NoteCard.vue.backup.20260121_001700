@@ -150,7 +150,7 @@ const videoPlayer = ref<HTMLVideoElement | null>(null);
 const cardContainer = ref<HTMLDivElement | null>(null);
 const editingField = ref<string | null>(null);
 const editingValue = ref<string>('');
-const originalValue = ref<unknown>(null);
+const originalValue = ref<any>(null);
 const editInputRef = ref<HTMLInputElement | null>(null);
 let intersectionObserver: IntersectionObserver | null = null;
 
@@ -162,20 +162,17 @@ onMounted(() => {
   // Setup Intersection Observer for visibility
   if (cardContainer.value) {
     intersectionObserver = new IntersectionObserver(
-      entries => {
-        const entry = entries[0];
-        if (!entry || !videoPlayer.value) return;
-
-        if (entry.isIntersecting) {
-          // Card is visible - autoplay
-          videoPlayer.value
-            .play()
-            .catch(() => {
+      ([entry]) => {
+        if (videoPlayer.value) {
+          if (entry.isIntersecting) {
+            // Card is visible - autoplay
+            videoPlayer.value.play().catch(() => {
               // Autoplay prevented
             });
-        } else {
-          // Card is not visible - pause
-          videoPlayer.value.pause();
+          } else {
+            // Card is not visible - pause
+            videoPlayer.value.pause();
+          }
         }
       },
       { threshold: 0.5 } // Trigger when 50% visible
@@ -219,7 +216,12 @@ const checkEndTime = () => {
   }
 };
 
-// seekTo helper removed (unused)
+const seekTo = (time: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = time;
+    videoPlayer.value.play();
+  }
+};
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -239,7 +241,7 @@ const startEditDescription = () => {
   editingField.value = 'description';
   originalValue.value = props.note.description;
   editingValue.value = props.note.description;
-  void nextTick(() => {
+  nextTick(() => {
     const inputs = document.querySelectorAll('.description .edit-input');
     if (inputs.length > 0) (inputs[0] as HTMLInputElement).focus();
   });
@@ -247,18 +249,16 @@ const startEditDescription = () => {
 
 const startEditField = (field: string) => {
   editingField.value = field;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const value = (props.note as any)[field];
+  const value = props.note[field as keyof typeof props.note];
   originalValue.value = value;
-  editingValue.value = String(value ?? '');
-  void nextTick(() => {
+  editingValue.value = field === 'startTime' || field === 'endTime' ? String(value) : String(value);
+  nextTick(() => {
     editInputRef.value?.focus();
   });
 };
 
 const saveDescription = () => {
   if (editingField.value === 'description' && editingValue.value !== originalValue.value) {
-    // eslint-disable-next-line vue/no-mutating-props
     props.note.description = editingValue.value;
   }
   editingField.value = null;
@@ -271,16 +271,13 @@ const saveField = (field: string) => {
     return;
   }
 
-  // eslint-disable-next-line vue/no-mutating-props
   if (field === 'startTime' || field === 'endTime' || field === 'instance') {
     const numValue = field === 'instance' ? parseInt(editingValue.value) : parseFloat(editingValue.value);
     if (!isNaN(numValue)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (props.note as any)[field] = numValue;
+      props.note[field as keyof typeof props.note] = numValue;
     }
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (props.note as any)[field] = editingValue.value;
+    props.note[field as keyof typeof props.note] = editingValue.value;
   }
   
   editingField.value = null;

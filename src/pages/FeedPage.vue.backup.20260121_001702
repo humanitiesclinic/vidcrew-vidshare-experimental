@@ -59,6 +59,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import NoteCard from 'components/NoteCard.vue';
 import { useNotesStore } from 'stores/notesStore';
+import type { Note } from 'stores/notesStore';
 
 const route = useRoute();
 const router = useRouter();
@@ -98,10 +99,7 @@ const currentCard = computed(() => {
 onMounted(() => {
   // Initialize with first note in first instance
   if (uniqueInstances.value.length > 0) {
-    const firstInstance = uniqueInstances.value[0];
-    if (firstInstance != null) {
-      currentInstance.value = firstInstance;
-    }
+    currentInstance.value = uniqueInstances.value[0];
     const firstNote = notesInCurrentInstance.value[0];
     if (firstNote) {
       currentCardId.value = firstNote.id;
@@ -155,7 +153,7 @@ const navigateLeft = () => {
     const prevCard = notesStore.notes.find(
       n => n.instance === prevInstance && n.descriptionGroup === category
     );
-    if (prevCard && prevInstance != null) {
+    if (prevCard) {
       currentInstance.value = prevInstance;
       currentCardId.value = prevCard.id;
       scrollToCard(0);
@@ -175,7 +173,7 @@ const navigateRight = () => {
     const nextCard = notesStore.notes.find(
       n => n.instance === nextInstance && n.descriptionGroup === category
     );
-    if (nextCard && nextInstance != null) {
+    if (nextCard) {
       currentInstance.value = nextInstance;
       currentCardId.value = nextCard.id;
       scrollToCard(0);
@@ -188,16 +186,13 @@ const navigateRight = () => {
 const scrollToNextCard = (delta: number) => {
   const notes = notesInCurrentInstance.value;
   if (!currentCard.value || notes.length === 0) return;
- 
+
   const currentIdx = notes.findIndex(n => n.id === currentCard.value!.id);
   const nextIdx = currentIdx + delta;
- 
+
   if (nextIdx >= 0 && nextIdx < notes.length) {
-    const nextNote = notes[nextIdx];
-    if (nextNote) {
-      currentCardId.value = nextNote.id;
-      scrollToCard(delta);
-    }
+    currentCardId.value = notes[nextIdx].id;
+    scrollToCard(delta);
   }
 };
 
@@ -223,17 +218,13 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 const handleTouchStart = (e: TouchEvent) => {
-  const touch = e.touches[0];
-  if (!touch) return;
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
 };
 
 const handleTouchEnd = (e: TouchEvent) => {
-  const touch = e.changedTouches[0];
-  if (!touch) return;
-  const touchEndX = touch.clientX;
-  const touchEndY = touch.clientY;
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
 
   const diffX = touchStartX - touchEndX;
   const diffY = touchStartY - touchEndY;

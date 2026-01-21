@@ -219,7 +219,12 @@ const checkEndTime = () => {
   }
 };
 
-// seekTo helper removed (unused)
+const seekTo = (time: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = time;
+    void videoPlayer.value.play();
+  }
+};
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -247,18 +252,16 @@ const startEditDescription = () => {
 
 const startEditField = (field: string) => {
   editingField.value = field;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const value = (props.note as any)[field];
   originalValue.value = value;
   editingValue.value = String(value ?? '');
-  void nextTick(() => {
+  nextTick(() => {
     editInputRef.value?.focus();
   });
 };
 
 const saveDescription = () => {
   if (editingField.value === 'description' && editingValue.value !== originalValue.value) {
-    // eslint-disable-next-line vue/no-mutating-props
     props.note.description = editingValue.value;
   }
   editingField.value = null;
@@ -271,15 +274,12 @@ const saveField = (field: string) => {
     return;
   }
 
-  // eslint-disable-next-line vue/no-mutating-props
   if (field === 'startTime' || field === 'endTime' || field === 'instance') {
     const numValue = field === 'instance' ? parseInt(editingValue.value) : parseFloat(editingValue.value);
     if (!isNaN(numValue)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (props.note as any)[field] = numValue;
     }
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (props.note as any)[field] = editingValue.value;
   }
   
