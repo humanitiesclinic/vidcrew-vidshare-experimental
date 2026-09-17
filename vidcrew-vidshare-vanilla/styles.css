@@ -216,6 +216,12 @@ body {
   border-bottom-color: #1976d2;
 }
 
+.tab.focused {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .feed-scroll {
   flex: 1;
   overflow-y: auto;

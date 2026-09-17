@@ -13,7 +13,8 @@ const appState = {
   threshold: 50,
   editingField: null,
   editingCardId: null,
-  editingValue: ''
+  editingValue: '',
+  focusedTabBar: null // 'year' or 'tag'
 };
 
 // Parse CSV to notes
@@ -138,23 +139,81 @@ function setupEventListeners() {
 function handleKeyDown(e) {
   if (!appState.currentEvent) return;
 
-  switch (e.key) {
-    case 'ArrowUp':
-    case 'k':
-      scrollPrevCard();
-      break;
-    case 'ArrowDown':
-    case 'j':
-      scrollNextCard();
-      break;
-    case 'ArrowLeft':
-    case 'h':
-      navigatePrevTag();
-      break;
-    case 'ArrowRight':
-    case 'l':
-      navigateNextTag();
-      break;
+  // Tab bar navigation
+  if (appState.focusedTabBar === 'year') {
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevYear();
+        e.preventDefault();
+        return;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextYear();
+        e.preventDefault();
+        return;
+      case 'ArrowDown':
+      case 'j':
+        appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+    }
+  } else if (appState.focusedTabBar === 'tag') {
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevTag();
+        e.preventDefault();
+        return;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextTag();
+        e.preventDefault();
+        return;
+      case 'ArrowUp':
+      case 'k':
+        appState.focusedTabBar = 'year';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+      case 'ArrowDown':
+      case 'j':
+        appState.focusedTabBar = null;
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+    }
+  }
+
+  // Card navigation (when no tab bar focused)
+  if (!appState.focusedTabBar) {
+    switch (e.key) {
+      case 'ArrowUp':
+      case 'k':
+        scrollPrevCard();
+        break;
+      case 'ArrowDown':
+      case 'j':
+        scrollNextCard();
+        break;
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevTag();
+        break;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextTag();
+        break;
+      case '1':
+        appState.focusedTabBar = 'year';
+        updateTabBarFocus();
+        break;
+      case '2':
+        appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
+        break;
+    }
   }
 }
 
@@ -240,10 +299,14 @@ function renderYearTabs(years) {
 
   years.forEach(year => {
     const tab = document.createElement('button');
-    tab.className = 'tab' + (year === appState.currentYear ? ' active' : '');
+    const isActive = year === appState.currentYear;
+    tab.className = 'tab' + (isActive ? ' active' : '');
     tab.textContent = year;
     tab.addEventListener('click', () => switchYear(year));
     yearTabsScroll.appendChild(tab);
+    if (isActive) {
+      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
   });
 }
 
@@ -261,10 +324,14 @@ function updateTagTabs(notesForEvent) {
 
   tagsForYearOccasion.forEach(tag => {
     const tab = document.createElement('button');
-    tab.className = 'tab' + (tag === appState.currentTag ? ' active' : '');
+    const isActive = tag === appState.currentTag;
+    tab.className = 'tab' + (isActive ? ' active' : '');
     tab.textContent = tag;
     tab.addEventListener('click', () => switchTag(tag));
     tagTabsScroll.appendChild(tab);
+    if (isActive) {
+      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
   });
 }
 
@@ -282,18 +349,7 @@ function switchTag(tag) {
   appState.currentTag = tag;
   appState.currentCardIndex = 0;
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const tagsForYearOccasion = [...new Set(notesForEvent
-    .filter(n => n.year === appState.currentYear)
-    .map(n => n.tag))].sort();
-  const tagTabsScroll = document.getElementById('tagTabsScroll');
-  tagTabsScroll.innerHTML = '';
-  tagsForYearOccasion.forEach(tag => {
-    const tab = document.createElement('button');
-    tab.className = 'tab' + (tag === appState.currentTag ? ' active' : '');
-    tab.textContent = tag;
-    tab.addEventListener('click', () => switchTag(tag));
-    tagTabsScroll.appendChild(tab);
-  });
+  updateTagTabs(notesForEvent);
   renderFeed(notesForEvent);
 }
 
@@ -323,7 +379,7 @@ function createNoteCard(note) {
   card.innerHTML = `
     <div class="video-container">
       ${note.muxPlaybackId ? `
-        <mux-player playback-id="${note.muxPlaybackId}" controls autoplay muted></mux-player>
+        <mux-player playbackId="${note.muxPlaybackId}" controls autoplay muted></mux-player>
       ` : `
         <video controls autoplay muted>
           <source src="${note.videoPath}" type="video/mp4">
@@ -425,17 +481,47 @@ function scrollNextCard() {
     n.year === appState.currentYear && 
     n.tag === appState.currentTag
   );
+  if (filtered.length === 0) return;
   if (appState.currentCardIndex < filtered.length - 1) {
     appState.currentCardIndex++;
-    renderFeed(notesForEvent);
+  } else {
+    appState.currentCardIndex = 0; // wrap around
   }
+  renderFeed(notesForEvent);
+  scrollCurrentCardIntoView();
 }
 
 function scrollPrevCard() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  );
+  if (filtered.length === 0) return;
   if (appState.currentCardIndex > 0) {
     appState.currentCardIndex--;
-    const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-    renderFeed(notesForEvent);
+  } else {
+    appState.currentCardIndex = filtered.length - 1; // wrap around
+  }
+  renderFeed(notesForEvent);
+  scrollCurrentCardIntoView();
+}
+
+function navigateNextYear() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+  const idx = years.indexOf(appState.currentYear);
+  if (idx < years.length - 1) {
+    switchYear(years[idx + 1]);
+  }
+}
+
+function navigatePrevYear() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+  const idx = years.indexOf(appState.currentYear);
+  if (idx > 0) {
+    switchYear(years[idx - 1]);
   }
 }
 
@@ -466,6 +552,29 @@ function updatePositionBadge(filtered) {
   const badge = document.getElementById('positionBadge');
   if (current) {
     badge.textContent = `${appState.currentYear} | ${appState.currentTag} | ${appState.currentCardIndex + 1}/${filtered.length}`;
+  }
+}
+
+function updateTabBarFocus() {
+  const yearTabs = document.querySelectorAll('.year-tabs .tab');
+  const tagTabs = document.querySelectorAll('.tag-tabs .tab');
+  
+  yearTabs.forEach(t => t.classList.remove('focused'));
+  tagTabs.forEach(t => t.classList.remove('focused'));
+  
+  if (appState.focusedTabBar === 'year') {
+    const activeYear = document.querySelector('.year-tabs .tab.active');
+    if (activeYear) activeYear.classList.add('focused');
+  } else if (appState.focusedTabBar === 'tag') {
+    const activeTag = document.querySelector('.tag-tabs .tab.active');
+    if (activeTag) activeTag.classList.add('focused');
+  }
+}
+
+function scrollCurrentCardIntoView() {
+  const currentCard = document.querySelector('.feed-card-wrapper.current');
+  if (currentCard) {
+    currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
