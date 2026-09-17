@@ -147,12 +147,31 @@ body {
   display: flex;
   align-items: center;
   position: fixed;
-  top: 50px;
   left: 0;
   right: 0;
   z-index: 20;
   overflow-x: auto;
   scroll-behavior: smooth;
+}
+
+.tab-bar.year-tabs {
+  top: 50px;
+}
+
+.tab-bar.tag-tabs {
+  top: 100px;
+}
+
+.tab-label {
+  color: #999;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 12px;
+  white-space: nowrap;
+  border-right: 1px solid #333;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .tabs-scroll {
@@ -201,7 +220,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-top: 100px;
+  margin-top: 150px;
   scroll-behavior: smooth;
 }
 
