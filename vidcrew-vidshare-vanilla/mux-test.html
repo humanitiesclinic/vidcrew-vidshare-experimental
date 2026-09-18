@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mux Player Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player@latest"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        mux-player { width: 500px; height: 300px; display: block; margin: 10px 0; }
+        .info { font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>Mux Player Isolation Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Known Good Playback ID (Mux demo)</h2>
+        <p class="info">Using Mux's public demo video</p>
+        <mux-player playbackId="SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU"></mux-player>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: With Metadata</h2>
+        <mux-player 
+            playbackId="SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU"
+            metadata-video-id="test-1"
+            metadata-video-title="Test Video"
+            metadata-viewer-user-id="user-1">
+        </mux-player>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Check Browser Console</h2>
+        <p class="info">Open DevTools (Cmd+Option+J) → Console tab. Any errors?</p>
+        <button onclick="checkConsoleLog()">Log test message</button>
+    </div>
+
+    <script>
+        console.log("Mux test page loaded. Mux script status:", window.MuxPlayer ? "loaded" : "not found");
+        function checkConsoleLog() {
+            console.log("✓ Console working. If Mux videos fail to load, check for CORS/auth errors above.");
+        }
+    </script>
+</body>
+</html>

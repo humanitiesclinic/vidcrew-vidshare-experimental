@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routine Replay</title>
+    <script src="https://image.mux.com/mux-player.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- List Page -->
+        <div id="listPage" class="page">
+            <div class="list-container">
+                <h1 class="page-title">Select Event Class</h1>
+                <div class="classes-grid" id="classesGrid"></div>
+            </div>
+        </div>
+
+        <!-- Feed Page -->
+        <div id="feedPage" class="page hidden">
+            <!-- Back button + title -->
+            <div class="back-button-bar">
+                <button class="back-btn" id="backBtn">← Back</button>
+                <h2 class="event-title" id="eventTitle"></h2>
+            </div>
+
+            <!-- Year Tab bar -->
+            <div class="tab-bar year-tabs">
+                <span class="tab-label">Year:</span>
+                <div class="tabs-scroll" id="yearTabsScroll"></div>
+            </div>
+
+            <!-- TAG Tab bar -->
+            <div class="tab-bar tag-tabs">
+                <span class="tab-label">TAG:</span>
+                <div class="tabs-scroll" id="tagTabsScroll"></div>
+            </div>
+
+            <!-- Feed scroll area -->
+            <div class="feed-scroll" id="feedScroll">
+                <div class="feed-content" id="feedContent"></div>
+            </div>
+
+            <!-- Position badge -->
+            <div class="position-badge" id="positionBadge"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
