@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>테스트 1 (시노-코리언 한글) | Video.js Test - Mux HLS + Captions</title>
+    <title>Video.js Test - Mux HLS + Captions</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
     <style>
         body { font-family: Arial; padding: 20px; background: #f5f5f5; }
@@ -26,7 +26,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>테스트 1 (시노-코리언 한글) | Video.js + Mux HLS + Captions</h1>
+        <h1>Video.js + Mux HLS + Captions</h1>
         
         <div class="player-section">
             <div class="video-container">
