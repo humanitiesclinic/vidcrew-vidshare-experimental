@@ -297,6 +297,44 @@ body {
   object-fit: contain;
 }
 
+.caption-list {
+  margin-top: 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #0f0f0f;
+}
+
+.caption-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #222;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+
+.caption-item:hover {
+  background: #1a1a1a;
+}
+
+.caption-item.active {
+  background: rgba(25, 118, 210, 0.2);
+  border-left: 3px solid #1976d2;
+}
+
+.caption-time {
+  font-weight: bold;
+  color: #1976d2;
+  font-size: 0.75rem;
+}
+
+.caption-text {
+  margin-top: 4px;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
 .metadata-section {
   padding: 16px;
   background: #1a1a1a;

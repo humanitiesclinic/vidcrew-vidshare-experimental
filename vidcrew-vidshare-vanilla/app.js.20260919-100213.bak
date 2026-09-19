@@ -371,24 +371,21 @@ function renderFeed(notesForEvent) {
   });
 
   updatePositionBadge(filtered);
-  
-  // Initialize Video.js players for all visible cards
-  filtered.forEach((note, idx) => {
-    initializeVideoPlayer(note, idx === appState.currentCardIndex);
-  });
 }
 
 function createNoteCard(note) {
   const card = document.createElement('div');
   card.className = 'note-card';
-  const videoId = `player-${note.id}`;
   card.innerHTML = `
     <div class="video-container">
-      <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
-        <p class="vjs-no-js">Enable JavaScript for video playback</p>
-      </video>
+      ${note.muxPlaybackId ? `
+        <mux-player playbackId="${note.muxPlaybackId}" controls autoplay muted></mux-player>
+      ` : `
+        <video controls autoplay muted>
+          <source src="${note.videoPath}" type="video/mp4">
+        </video>
+      `}
     </div>
-    <div class="caption-list" id="caption-list-${note.id}"></div>
     <div class="metadata-section">
       <h2 class="description">${escapeHtml(note.description)}</h2>
       <div class="metadata-grid">
@@ -590,66 +587,4 @@ function escapeHtml(text) {
     "'": '&#039;'
   };
   return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// Video.js player initialization and caption loading
-const playerCache = {};
-
-function initializeVideoPlayer(note, isCurrent) {
-  const videoId = `player-${note.id}`;
-  const videoElement = document.getElementById(videoId);
-  if (!videoElement) return;
-  
-  // Only initialize if not already initialized
-  if (playerCache[videoId]) return;
-  
-  let player = videojs(videoId, {
-    controls: true,
-    autoplay: false,
-    preload: 'auto',
-    responsive: true,
-    fluid: true
-  });
-  
-  playerCache[videoId] = player;
-  
-  // Set HLS source for Mux
-  if (note.muxPlaybackId) {
-    const hlsUrl = `https://stream.mux.com/${note.muxPlaybackId}.m3u8`;
-    player.src({
-      src: hlsUrl,
-      type: 'application/x-mpegURL'
-    });
-    
-    // Load captions from Mux VTT URL (if available)
-    loadCaptionsForNote(player, note);
-  } else if (note.videoPath) {
-    player.src({
-      src: note.videoPath,
-      type: 'video/mp4'
-    });
-  }
-}
-
-function loadCaptionsForNote(player, note) {
-  // For now, skip caption loading if no VTT URL in note metadata
-  // To enable: add vttUrl to CSV data and note object
-  // Placeholder for future caption integration per video
-  // const vttUrl = note.vttUrl;
-  // if (vttUrl) loadAndInjectCaptions(player, vttUrl, note.id);
-}
-
-function timeToSeconds(timeStr) {
-  const parts = timeStr.split(':');
-  const hours = parseInt(parts[0]) || 0;
-  const minutes = parseInt(parts[1]) || 0;
-  const seconds = parseFloat(parts[2]) || 0;
-  return hours * 3600 + minutes * 60 + seconds;
-}
-
-function formatTimeExtended(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  return `${h > 0 ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
