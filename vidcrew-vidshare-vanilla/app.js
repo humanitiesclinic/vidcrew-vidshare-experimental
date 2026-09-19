@@ -360,6 +360,15 @@ function renderFeed(notesForEvent) {
     n.tag === appState.currentTag
   );
   const content = document.getElementById('feedContent');
+  
+  // Destroy old players before clearing DOM
+  Object.keys(playerCache).forEach(videoId => {
+    if (playerCache[videoId]) {
+      playerCache[videoId].dispose();
+      delete playerCache[videoId];
+    }
+  });
+  
   content.innerHTML = '';
 
   filtered.forEach((note, idx) => {
@@ -605,7 +614,7 @@ function initializeVideoPlayer(note, isCurrent) {
   
   let player = videojs(videoId, {
     controls: true,
-    autoplay: false,
+    autoplay: isCurrent,
     preload: 'auto',
     responsive: true,
     fluid: true
@@ -632,11 +641,66 @@ function initializeVideoPlayer(note, isCurrent) {
 }
 
 function loadCaptionsForNote(player, note) {
-  // For now, skip caption loading if no VTT URL in note metadata
-  // To enable: add vttUrl to CSV data and note object
-  // Placeholder for future caption integration per video
-  // const vttUrl = note.vttUrl;
-  // if (vttUrl) loadAndInjectCaptions(player, vttUrl, note.id);
+  // Fetch and parse VTT captions from Mux
+  // Using hardcoded test VTT URL for now - replace with dynamic URL from CSV
+  const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
+  
+  fetch(vttUrl)
+    .then(response => response.text())
+    .then(vttText => {
+      // Create text track
+      const track = player.addTextTrack('captions', 'English', 'en');
+      
+      // Parse VTT and add cues
+      const lines = vttText.split('\n');
+      let i = 0;
+      const allCues = [];
+      
+      while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        if (line.includes('-->')) {
+          const [startStr, endStr] = line.split('-->').map(t => t.trim());
+          const start = timeToSeconds(startStr);
+          const end = timeToSeconds(endStr);
+          
+          i++;
+          let text = '';
+          while (i < lines.length && lines[i].trim() !== '') {
+            text += lines[i].trim() + ' ';
+            i++;
+          }
+          
+          if (text.trim()) {
+            const cue = new VTTCue(start, end, text.trim());
+            track.addCue(cue);
+            allCues.push({ start, end, text: text.trim() });
+          }
+        }
+        i++;
+      }
+      
+      // Render caption list UI
+      const captionListEl = document.getElementById(`caption-list-${note.id}`);
+      if (captionListEl && allCues.length > 0) {
+        captionListEl.innerHTML = '';
+        allCues.forEach((cue, idx) => {
+          const item = document.createElement('div');
+          item.className = 'caption-item';
+          item.id = `caption-${note.id}-${idx}`;
+          item.innerHTML = `
+            <div class="caption-time">${formatTimeExtended(cue.start)} → ${formatTimeExtended(cue.end)}</div>
+            <div class="caption-text">${escapeHtml(cue.text)}</div>
+          `;
+          item.addEventListener('click', () => {
+            player.currentTime(cue.start);
+            player.play();
+          });
+          captionListEl.appendChild(item);
+        });
+      }
+    })
+    .catch(err => console.error('Error loading captions:', err));
 }
 
 function timeToSeconds(timeStr) {
