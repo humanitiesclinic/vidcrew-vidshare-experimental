@@ -11,19 +11,7 @@
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
         .player-section { margin: 20px 0; }
         .video-container { margin: 20px 0; position: relative; }
-        .caption-display { 
-            margin-top: 15px; 
-            padding: 15px; 
-            background: #222; 
-            color: #fff; 
-            min-height: 60px; 
-            border-radius: 4px; 
-            font-size: 16px; 
-            line-height: 1.5;
-            text-align: center;
-        }
-        .caption-display.empty { color: #666; font-style: italic; }
-        .transcript-container { margin-top: 20px; max-height: 400px; overflow-y: auto; }
+        .transcript-container { margin-top: 20px; }
         .controls { margin: 15px 0; }
         .speed-control { margin: 10px 0; }
         label { font-weight: bold; margin-right: 10px; }
@@ -34,7 +22,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Video.js + Mux HLS + Custom Captions</h1>
+        <h1>Video.js + Mux HLS + Transcript Plugin</h1>
         
         <div class="player-section">
             <div class="video-container">
@@ -88,23 +76,6 @@
         const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
         const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
         
-        // Load captions via remote text track API
-        async function loadCaptions() {
-            try {
-                // Add captions track to player
-                player.addRemoteTextTrack({
-                    kind: 'captions',
-                    src: vttUrl,
-                    srclang: 'en',
-                    label: 'English'
-                }, false);
-                
-                console.log('Captions track added');
-            } catch (e) {
-                console.error('Error loading captions:', e);
-            }
-        }
-        
         // Initialize Video.js player
         const player = videojs('my-player', {
             controls: true,
@@ -120,10 +91,66 @@
             type: 'application/x-mpegURL'
         });
 
-        // Load captions
-        loadCaptions();
+        // Parse VTT and add cues to track
+        async function loadAndInjectCaptions() {
+            try {
+                // Fetch VTT file
+                const response = await fetch(vttUrl);
+                const vttText = await response.text();
+                
+                // Create text track
+                const track = player.addTextTrack('captions', 'English', 'en');
+                
+                // Parse VTT and add cues
+                parseCuesFromVTT(vttText, track);
+                
+                console.log('Captions loaded and injected');
+            } catch (e) {
+                console.error('Error loading captions:', e);
+                document.getElementById('status').textContent = 'Status: Error loading captions ✗';
+            }
+        }
+        
+        function parseCuesFromVTT(vttText, track) {
+            const lines = vttText.split('\n');
+            let i = 0;
+            
+            while (i < lines.length) {
+                const line = lines[i].trim();
+                
+                // Look for time line (HH:MM:SS.MS --> HH:MM:SS.MS)
+                if (line.includes('-->')) {
+                    const [startStr, endStr] = line.split('-->').map(t => t.trim());
+                    const start = timeToSeconds(startStr);
+                    const end = timeToSeconds(endStr);
+                    
+                    i++;
+                    let text = '';
+                    while (i < lines.length && lines[i].trim() !== '') {
+                        text += lines[i].trim() + ' ';
+                        i++;
+                    }
+                    
+                    if (text.trim()) {
+                        const cue = new VTTCue(start, end, text.trim());
+                        track.addCue(cue);
+                    }
+                }
+                i++;
+            }
+            
+            console.log(`Parsed ${track.cues.length} cues`);
+        }
+        
+        function timeToSeconds(timeStr) {
+            const parts = timeStr.split(':');
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            const seconds = parseFloat(parts[2]) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
+        }
 
-        // Update status when ready
+        // Load captions after player is ready
         player.on('loadedmetadata', function() {
             document.getElementById('status').textContent = 'Status: Ready to play ✓';
             const duration = player.duration();
@@ -140,9 +167,12 @@
             document.getElementById('current-time').textContent = `Current time: ${current.toFixed(1)}s`;
         });
         
-        // Initialize transcript plugin after metadata loads
-        player.on('loadedmetadata', function() {
-            setTimeout(() => {
+        // Load captions immediately
+        loadAndInjectCaptions();
+        
+        // Initialize transcript plugin after brief delay
+        setTimeout(() => {
+            try {
                 const options = {
                     showTitle: true,
                     showTrackSelector: false,
@@ -151,9 +181,14 @@
                 };
                 const transcript = player.transcript(options);
                 const transcriptContainer = document.querySelector('#transcript-container');
-                transcriptContainer.appendChild(transcript.el());
-            }, 100);
-        });
+                if (transcript && transcript.el()) {
+                    transcriptContainer.appendChild(transcript.el());
+                    console.log('Transcript plugin initialized');
+                }
+            } catch (e) {
+                console.error('Error initializing transcript plugin:', e);
+            }
+        }, 500);
 
         // Speed control
         document.getElementById('speed-select').addEventListener('change', function(e) {
