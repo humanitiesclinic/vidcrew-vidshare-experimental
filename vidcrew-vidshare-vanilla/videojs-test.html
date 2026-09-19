@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video.js Test - Mux HLS + Custom Captions</title>
+    <title>Video.js Test - Mux HLS + Transcript Plugin</title>
     <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <link href="https://raw.githubusercontent.com/walsh9/videojs-transcript/master/css/videojs-transcript.css" rel="stylesheet" />
     <style>
         body { font-family: Arial; padding: 20px; background: #f5f5f5; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
@@ -22,6 +23,7 @@
             text-align: center;
         }
         .caption-display.empty { color: #666; font-style: italic; }
+        .transcript-container { margin-top: 20px; max-height: 400px; overflow-y: auto; }
         .controls { margin: 15px 0; }
         .speed-control { margin: 10px 0; }
         label { font-weight: bold; margin-right: 10px; }
@@ -42,7 +44,7 @@
                 </video>
             </div>
             
-            <div class="caption-display empty" id="caption-display">No captions</div>
+            <div class="transcript-container" id="transcript-container"></div>
         </div>
 
         <div class="controls">
@@ -80,65 +82,26 @@
     </div>
 
     <script src="https://vjs.zencdn.net/7.20.3/video.js"></script>
+    <script src="https://raw.githubusercontent.com/walsh9/videojs-transcript/master/dist/videojs-transcript.js"></script>
     <script>
         const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
         const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
         const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
         
-        // Parse VTT cues
-        let cues = [];
-        
+        // Load captions via remote text track API
         async function loadCaptions() {
             try {
-                const response = await fetch(vttUrl);
-                const vttText = await response.text();
-                parseCaptions(vttText);
+                // Add captions track to player
+                player.addRemoteTextTrack({
+                    kind: 'captions',
+                    src: vttUrl,
+                    srclang: 'en',
+                    label: 'English'
+                }, false);
+                
+                console.log('Captions track added');
             } catch (e) {
                 console.error('Error loading captions:', e);
-            }
-        }
-        
-        function parseCaptions(vttText) {
-            const lines = vttText.split('\n');
-            let i = 0;
-            
-            while (i < lines.length) {
-                const line = lines[i].trim();
-                
-                // Look for time line (HH:MM:SS.MS --> HH:MM:SS.MS)
-                if (line.includes('-->')) {
-                    const [start, end] = line.split(' --> ').map(t => timeToSeconds(t.trim()));
-                    i++;
-                    let text = '';
-                    while (i < lines.length && lines[i].trim() !== '') {
-                        text += lines[i] + ' ';
-                        i++;
-                    }
-                    cues.push({ start, end, text: text.trim() });
-                }
-                i++;
-            }
-            console.log('Loaded', cues.length, 'captions');
-        }
-        
-        function timeToSeconds(timeStr) {
-            const parts = timeStr.split(':');
-            const hours = parseInt(parts[0]) || 0;
-            const minutes = parseInt(parts[1]) || 0;
-            const seconds = parseFloat(parts[2]) || 0;
-            return hours * 3600 + minutes * 60 + seconds;
-        }
-        
-        function updateCaption(time) {
-            const displayEl = document.getElementById('caption-display');
-            const cue = cues.find(c => time >= c.start && time <= c.end);
-            
-            if (cue) {
-                displayEl.textContent = cue.text;
-                displayEl.classList.remove('empty');
-            } else {
-                displayEl.textContent = 'No captions';
-                displayEl.classList.add('empty');
             }
         }
         
@@ -171,11 +134,25 @@
             document.getElementById('status').textContent = 'Status: Error loading video ✗';
         });
 
-        // Update current time & captions
+        // Update current time display
         player.on('timeupdate', function() {
             const current = player.currentTime();
             document.getElementById('current-time').textContent = `Current time: ${current.toFixed(1)}s`;
-            updateCaption(current);
+        });
+        
+        // Initialize transcript plugin after metadata loads
+        player.on('loadedmetadata', function() {
+            setTimeout(() => {
+                const options = {
+                    showTitle: true,
+                    showTrackSelector: false,
+                    autoscroll: true,
+                    clickArea: 'line'
+                };
+                const transcript = player.transcript(options);
+                const transcriptContainer = document.querySelector('#transcript-container');
+                transcriptContainer.appendChild(transcript.el());
+            }, 100);
         });
 
         // Speed control
