@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test A | Video.js v10 Test - HLS + Captions</title>
+    <title>Test B | Video.js v10 Test - MP4 + Captions</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
@@ -28,7 +28,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Test A | Video.js v10 + Mux HLS + Captions</h1>
+        <h1>Test B | Video.js v10 + Mux MP4 + Captions</h1>
         
         <div class="player-section">
             <div class="player-wrapper">
@@ -70,19 +70,15 @@
 
         <div class="info">
             <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
-            <p><strong>HLS Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8</code></p>
+            <p><strong>MP4 Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4</code></p>
             <p id="status">Status: Loading...</p>
             <p id="current-time">Current time: 0s</p>
         </div>
     </div>
 
-    <script type="module">
-        import '@videojs/html/video/player';
-        import '@videojs/html/video/skin';
-        import '@videojs/html/media/hls-video';
-        
+    <script>
         const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
-        const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+        const mp4Url = `https://stream.mux.com/${playbackId}.mp4`;
         const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
         
         let allCues = [];
@@ -90,12 +86,12 @@
         let segmentEnd = 0;
         
         const videoEl = document.getElementById('main-video');
-        const playerEl = document.querySelector('video-player');
         
-        // Load HLS stream
-        videoEl.src = hlsUrl;
+        // Load MP4 stream
+        videoEl.src = mp4Url;
         videoEl.autoplay = true;
         videoEl.crossOrigin = 'anonymous';
+        videoEl.controls = true;
         
         // Load and parse captions
         async function loadCaptions() {
