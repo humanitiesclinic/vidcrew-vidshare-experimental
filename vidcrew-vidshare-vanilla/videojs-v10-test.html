@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>테스트 2 (시노-코리언 한글) | Video.js v10 - Mux HLS + Captions</title>
+    <title>Test A | Video.js v10 - Mux HLS + Captions</title>
     <style>
         body { font-family: Arial; padding: 20px; background: #f5f5f5; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
@@ -23,63 +23,7 @@
         button { padding: 8px 16px; margin: 5px; cursor: pointer; }
         .info { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h1>테스트 2 (시노-코리언 한글) | Video.js v10 + Mux HLS + Captions</h1>
-        
-        <div class="player-section">
-            <div class="video-container">
-                <video-player>
-                    <video-skin>
-                        <video 
-                            id="mux-video"
-                            playsinline
-                            src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8"
-                            type="application/x-mpegURL">
-                        </video>
-                    </video-skin>
-                </video-player>
-            </div>
-            
-            <div class="caption-list" id="caption-list"></div>
-        </div>
-
-        <div class="controls">
-            <h3>Playback Controls</h3>
-            
-            <div class="speed-control">
-                <label for="speed-select">Playback Speed:</label>
-                <select id="speed-select">
-                    <option value="0.5">0.5x</option>
-                    <option value="1" selected>1x (Normal)</option>
-                    <option value="1.25">1.25x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2">2x</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="segment-start">Segment Start (sec):</label>
-                <input type="number" id="segment-start" value="0" min="0" step="0.1">
-                
-                <label for="segment-end">Segment End (sec):</label>
-                <input type="number" id="segment-end" value="0" min="0" step="0.1">
-                
-                <button onclick="applySegment()">Apply Segment</button>
-                <button onclick="resetSegment()">Reset Segment</button>
-            </div>
-        </div>
-
-        <div class="info">
-            <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
-            <p><strong>HLS Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8</code></p>
-            <p id="status">Status: Loading...</p>
-            <p id="current-time">Current time: 0s</p>
-        </div>
-    </div>
-
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video.js"></script>
     <script type="module">
         const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
         const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
@@ -253,5 +197,61 @@
             document.getElementById('status').textContent = 'Status: Ready to play ✓';
         };
     </script>
+</head>
+<body>
+    <div class="container">
+        <h1>테스트 2 (시노-코리언 한글) | Video.js v10 + Mux HLS + Captions</h1>
+        
+        <div class="player-section">
+            <div class="video-container">
+                <video-player>
+                    <video-skin>
+                        <video 
+                            id="mux-video"
+                            playsinline
+                            src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8"
+                            type="application/x-mpegURL">
+                        </video>
+                    </video-skin>
+                </video-player>
+            </div>
+            
+            <div class="caption-list" id="caption-list"></div>
+        </div>
+
+        <div class="controls">
+            <h3>Playback Controls</h3>
+            
+            <div class="speed-control">
+                <label for="speed-select">Playback Speed:</label>
+                <select id="speed-select">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x (Normal)</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="segment-start">Segment Start (sec):</label>
+                <input type="number" id="segment-start" value="0" min="0" step="0.1">
+                
+                <label for="segment-end">Segment End (sec):</label>
+                <input type="number" id="segment-end" value="0" min="0" step="0.1">
+                
+                <button onclick="applySegment()">Apply Segment</button>
+                <button onclick="resetSegment()">Reset Segment</button>
+            </div>
+        </div>
+
+        <div class="info">
+            <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
+            <p><strong>HLS Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8</code></p>
+            <p id="status">Status: Loading...</p>
+            <p id="current-time">Current time: 0s</p>
+        </div>
+    </div>
+
 </body>
 </html>
