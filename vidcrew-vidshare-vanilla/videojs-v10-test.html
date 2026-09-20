@@ -27,13 +27,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>Test C | Video.js v10 + MP4 + Captions (Proper v10 Implementation)</h1>
+        <h1>Test C | Video.js v10 + MP4 + Captions</h1>
         
         <div class="player-section">
             <div class="player-wrapper">
+                <!-- Video.js v10 player - src in video element per docs -->
                 <video-player>
                     <video-skin>
-                        <video id="main-video" playsinline></video>
+                        <video 
+                            id="main-video"
+                            src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4"
+                            playsinline>
+                        </video>
                     </video-skin>
                 </video-player>
             </div>
@@ -69,18 +74,16 @@
 
         <div class="info">
             <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
-            <p><strong>MP4 Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4</code></p>
+            <p><strong>MP4 Stream URL:</strong> <code>https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4</code></p>
             <p id="status">Status: Loading...</p>
             <p id="current-time">Current time: 0s</p>
         </div>
     </div>
 
-    <!-- Video.js v10 CDN (module script) -->
+    <!-- Video.js v10 CDN (module script) - MUST be before custom elements are used -->
     <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.31/cdn/video.js"></script>
 
     <script>
-        const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
-        const mp4Url = `https://stream.mux.com/${playbackId}.mp4`;
         const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
         
         let allCues = [];
@@ -89,11 +92,9 @@
         
         const videoEl = document.getElementById('main-video');
         
-        // Load MP4 stream
-        videoEl.src = mp4Url;
-        videoEl.autoplay = true;
-        videoEl.crossOrigin = 'anonymous';
-        videoEl.controls = true;
+        // Add controls attribute and autoplay
+        videoEl.setAttribute('controls', '');
+        videoEl.setAttribute('autoplay', '');
         
         // Load and parse captions
         async function loadCaptions() {
