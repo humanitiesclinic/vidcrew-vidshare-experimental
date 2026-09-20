@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test B | Video.js v10 Test - MP4 + Captions</title>
+    <title>Test C | Video.js v10 Test - MP4 + Captions</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
@@ -23,12 +23,11 @@
         input, select { padding: 5px; }
         button { padding: 8px 16px; margin: 5px; cursor: pointer; }
         .info { font-size: 12px; color: #666; margin-top: 10px; }
-        video-player { display: block; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Test B | Video.js v10 + Mux MP4 + Captions</h1>
+        <h1>Test C | Video.js v10 + MP4 + Captions (Proper v10 Implementation)</h1>
         
         <div class="player-section">
             <div class="player-wrapper">
@@ -75,6 +74,9 @@
             <p id="current-time">Current time: 0s</p>
         </div>
     </div>
+
+    <!-- Video.js v10 CDN (module script) -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.31/cdn/video.js"></script>
 
     <script>
         const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
