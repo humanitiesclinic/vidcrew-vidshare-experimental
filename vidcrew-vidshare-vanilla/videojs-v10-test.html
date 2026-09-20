@@ -3,47 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test C | Video.js v10 Test - MP4 + Captions</title>
+    <title>테스트 2 (시노-코리언 한글) | Video.js v10 - Mux HLS + Captions</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { margin-bottom: 20px; }
         .player-section { margin: 20px 0; }
-        .player-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 20px; }
-        .captions-list { margin-top: 20px; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; }
+        .video-container { margin: 20px 0; }
+        video-player { width: 100%; max-width: 100%; display: block; }
+        .caption-list { margin-top: 20px; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; }
         .caption-item { padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer; }
         .caption-item:hover { background: #f9f9f9; }
         .caption-item.active { background: #e3f2fd; border-left: 3px solid #1976d2; }
-        .caption-time { font-weight: bold; color: #1976d2; font-size: 0.9rem; }
+        .caption-time { font-weight: bold; color: #1976d2; }
         .caption-text { margin-top: 4px; color: #333; }
         .controls { margin: 15px 0; }
         .speed-control { margin: 10px 0; }
         label { font-weight: bold; margin-right: 10px; }
-        input, select { padding: 5px; }
+        input[type="range"], select { padding: 5px; }
         button { padding: 8px 16px; margin: 5px; cursor: pointer; }
         .info { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Test C | Video.js v10 + MP4 + Captions</h1>
+        <h1>테스트 2 (시노-코리언 한글) | Video.js v10 + Mux HLS + Captions</h1>
         
         <div class="player-section">
-            <div class="player-wrapper">
-                <!-- Video.js v10 player - src in video element per docs -->
+            <div class="video-container">
                 <video-player>
                     <video-skin>
                         <video 
-                            id="main-video"
-                            src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4"
-                            playsinline>
+                            id="mux-video"
+                            playsinline
+                            src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8"
+                            type="application/x-mpegURL">
                         </video>
                     </video-skin>
                 </video-player>
             </div>
             
-            <div class="captions-list" id="captions-list"></div>
+            <div class="caption-list" id="caption-list"></div>
         </div>
 
         <div class="controls">
@@ -74,76 +73,76 @@
 
         <div class="info">
             <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
-            <p><strong>MP4 Stream URL:</strong> <code>https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.mp4</code></p>
+            <p><strong>HLS Stream URL:</strong> <code id="stream-url">https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8</code></p>
             <p id="status">Status: Loading...</p>
             <p id="current-time">Current time: 0s</p>
         </div>
     </div>
 
-    <!-- Video.js v10 CDN (module script) - MUST be before custom elements are used -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html@10.0.0-beta.31/cdn/video.js"></script>
-
-    <script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video.js"></script>
+    <script type="module">
+        const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
+        const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
         const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
         
         let allCues = [];
+        let video = document.getElementById('mux-video');
         let segmentActive = false;
         let segmentEnd = 0;
-        
-        const videoEl = document.getElementById('main-video');
-        
-        // Add controls attribute and autoplay
-        videoEl.setAttribute('controls', '');
-        videoEl.setAttribute('autoplay', '');
-        
-        // Load and parse captions
-        async function loadCaptions() {
+        let metadataLoaded = false;
+
+        // Parse VTT and add cues to track
+        async function loadAndInjectCaptions() {
             try {
                 const response = await fetch(vttUrl);
                 const vttText = await response.text();
                 
-                // Add track element
+                // Create text track
                 const track = document.createElement('track');
                 track.kind = 'captions';
                 track.srclang = 'en';
                 track.label = 'English';
-                track.default = true;
-                videoEl.appendChild(track);
                 
-                // Parse VTT
-                const lines = vttText.split('\n');
-                let i = 0;
+                // Parse VTT and build in-memory cues
+                parseCuesFromVTT(vttText);
                 
-                while (i < lines.length) {
-                    const line = lines[i].trim();
-                    
-                    if (line.includes('-->')) {
-                        const [startStr, endStr] = line.split('-->').map(t => t.trim());
-                        const start = timeToSeconds(startStr);
-                        const end = timeToSeconds(endStr);
-                        
-                        i++;
-                        let text = '';
-                        while (i < lines.length && lines[i].trim() !== '') {
-                            text += lines[i].trim() + ' ';
-                            i++;
-                        }
-                        
-                        if (text.trim()) {
-                            const cue = new VTTCue(start, end, text.trim());
-                            track.track.addCue(cue);
-                            allCues.push({ start, end, text: text.trim() });
-                        }
-                    }
-                    i++;
-                }
+                // Add track to video
+                video.appendChild(track);
                 
-                renderCaptionsList();
-                document.getElementById('status').textContent = 'Status: Ready to play ✓';
-                console.log(`Captions loaded: ${allCues.length} cues`);
+                // Build caption list UI
+                renderCaptionList();
+                
+                console.log('Captions loaded: ' + allCues.length + ' cues');
             } catch (e) {
                 console.error('Error loading captions:', e);
                 document.getElementById('status').textContent = 'Status: Error loading captions ✗';
+            }
+        }
+        
+        function parseCuesFromVTT(vttText) {
+            const lines = vttText.split('\n');
+            let i = 0;
+            
+            while (i < lines.length) {
+                const line = lines[i].trim();
+                
+                if (line.includes('-->')) {
+                    const [startStr, endStr] = line.split('-->').map(t => t.trim());
+                    const start = timeToSeconds(startStr);
+                    const end = timeToSeconds(endStr);
+                    
+                    i++;
+                    let text = '';
+                    while (i < lines.length && lines[i].trim() !== '') {
+                        text += lines[i].trim() + ' ';
+                        i++;
+                    }
+                    
+                    if (text.trim()) {
+                        allCues.push({ start, end, text: text.trim() });
+                    }
+                }
+                i++;
             }
         }
         
@@ -162,23 +161,23 @@
             return `${h > 0 ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
         
-        function renderCaptionsList() {
-            const listEl = document.getElementById('captions-list');
-            listEl.innerHTML = '';
+        function renderCaptionList() {
+            const list = document.getElementById('caption-list');
+            list.innerHTML = '';
             
             allCues.forEach((cue, idx) => {
                 const item = document.createElement('div');
                 item.className = 'caption-item';
-                item.id = `caption-${idx}`;
+                item.id = 'caption-' + idx;
                 item.innerHTML = `
                     <div class="caption-time">${formatTime(cue.start)} → ${formatTime(cue.end)}</div>
                     <div class="caption-text">${cue.text}</div>
                 `;
                 item.addEventListener('click', () => {
-                    videoEl.currentTime = cue.start;
-                    videoEl.play();
+                    video.currentTime = cue.start;
+                    video.play();
                 });
-                listEl.appendChild(item);
+                list.appendChild(item);
             });
         }
         
@@ -189,43 +188,49 @@
             
             const current = allCues.findIndex(cue => currentTime >= cue.start && currentTime <= cue.end);
             if (current >= 0) {
-                const el = document.getElementById(`caption-${current}`);
+                const el = document.getElementById('caption-' + current);
                 if (el) {
                     el.classList.add('active');
                     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
         }
-        
+
+        // Load captions immediately
+        loadAndInjectCaptions();
+
         // Video events
-        videoEl.addEventListener('loadedmetadata', function() {
-            document.getElementById('segment-end').value = videoEl.duration.toFixed(1);
+        video.addEventListener('loadedmetadata', function() {
             document.getElementById('status').textContent = 'Status: Ready to play ✓';
+            const duration = video.duration;
+            document.getElementById('segment-end').value = duration.toFixed(1);
+            metadataLoaded = true;
         });
-        
-        videoEl.addEventListener('timeupdate', function() {
-            const current = videoEl.currentTime;
-            const duration = videoEl.duration;
+
+        video.addEventListener('error', function() {
+            document.getElementById('status').textContent = 'Status: Error loading video ✗';
+        });
+
+        video.addEventListener('timeupdate', function() {
+            if (!metadataLoaded) return;
+            const current = video.currentTime;
+            const duration = video.duration;
             const remaining = duration - current;
             document.getElementById('current-time').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
             updateActiveCue(current);
             
             // Auto-pause at segment end
-            if (segmentActive && current >= segmentEnd) {
-                videoEl.pause();
+            if (segmentActive && video.currentTime >= segmentEnd) {
+                video.pause();
                 document.getElementById('status').textContent = 'Segment ended. Paused.';
             }
         });
-        
-        videoEl.addEventListener('error', function() {
-            document.getElementById('status').textContent = 'Status: Error loading video ✗';
-        });
-        
+
         // Speed control
         document.getElementById('speed-select').addEventListener('change', function(e) {
-            videoEl.playbackRate = parseFloat(e.target.value);
+            video.playbackRate = parseFloat(e.target.value);
         });
-        
+
         // Segment controls
         window.applySegment = function() {
             const start = parseFloat(document.getElementById('segment-start').value);
@@ -236,20 +241,17 @@
                 return;
             }
             
-            videoEl.currentTime = start;
+            video.currentTime = start;
             segmentEnd = end;
             segmentActive = true;
-            videoEl.play();
+            video.play();
             document.getElementById('status').textContent = `Segment active: ${start}s - ${end}s`;
         };
-        
+
         window.resetSegment = function() {
             segmentActive = false;
             document.getElementById('status').textContent = 'Status: Ready to play ✓';
         };
-        
-        // Load captions on page load
-        loadCaptions();
     </script>
 </body>
 </html>
