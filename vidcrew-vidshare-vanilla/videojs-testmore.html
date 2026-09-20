@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Video.js HLS</title>
+  <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet">
+</head>
+<body>
+  <video id="my-player" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
+    <source src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8" type="application/x-mpegURL">
+    <p class="vjs-no-js">Enable JavaScript</p>
+  </video>
+
+  <script src="https://vjs.zencdn.net/7.20.3/video.js"></script>
+  <script>
+    videojs('my-player');
+  </script>
+</body>
+</html>
