@@ -6,7 +6,7 @@
   <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet">
 </head>
 <body>
-  <h1>Test D</h1>
+  <h1>Test E</h1>
   <div id="time-display" style="margin: 10px 0; font-size: 14px;"></div>
   <video id="my-player" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
     <source src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8" type="application/x-mpegURL">
@@ -32,6 +32,17 @@
       const duration = player.duration();
       const remaining = duration - current;
       document.getElementById('time-display').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
+    });
+    
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (player.paused()) {
+          player.play();
+        } else {
+          player.pause();
+        }
+      }
     });
   </script>
 </body>
