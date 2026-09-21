@@ -21,16 +21,18 @@ const appState = {
 // Parse CSV to notes
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
+  // Strip leading pipe (row number marker) from all lines
+  const cleanLines = lines.map(l => l.startsWith('|') ? l.substring(1) : l);
   // Detect delimiter: check if first line has pipe or comma
-  const firstLine = lines[0];
+  const firstLine = cleanLines[0];
   const delimiter = firstLine.includes('|') ? '|' : ',';
   const headers = firstLine.split(delimiter).map(h => h.trim());
   appState.csvHeaders = headers; // Store headers for dynamic rendering
   const notes = [];
   let id = 1;
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
+  for (let i = 1; i < cleanLines.length; i++) {
+    const line = cleanLines[i];
     if (!line.trim()) continue;
 
     const cells = parseCSVLine(line, delimiter);
@@ -388,13 +390,10 @@ function createNoteCard(note) {
   card.className = 'note-card';
   const videoId = `player-${note.id}`;
   
-  // Build metadata grid from CSV headers
-  const fieldsToExclude = ['Mux Upload Comments', 'Mux Asset ID', 'Full File Path', 'start_date', 'end_date', 'absolute_path . only for corrob. delete if correct', 'mapping to the exact NTDs. as of now only from `__agenda for BD2026, CN2026, SAn2026, haircut etc.txt`', 'ORIGIN FILE', 'segment_start_timecode', 'segment_end_timecode'];
+  // Build metadata grid from ALL CSV headers
   const metadataHtml = appState.csvHeaders
-    .filter(header => !fieldsToExclude.includes(header))
     .map(header => {
       const value = note.csvData[header] || '';
-      const isEditable = true; // All CSV columns are editable
       return `
         <div class="meta-item editable-item" data-field="csvData.${header}" data-id="${note.id}">
           <div class="label-with-chip">
