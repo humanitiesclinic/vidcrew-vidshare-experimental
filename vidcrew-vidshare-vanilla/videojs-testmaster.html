@@ -70,8 +70,12 @@
     <script>
         const SEGMENT_START = 2;
         const SEGMENT_END = 8;
+        let allCues = [];
         
-        const player = videojs('my-player');
+        const player = videojs('my-player', {
+            responsive: true,
+            fluid: true
+        });
 
         // Auto-play on segment start, auto-pause at end
         player.on('play', function() {
@@ -94,7 +98,78 @@
         player.on('loadedmetadata', function() {
             player.playbackRate(1.5);
             document.getElementById('status').textContent = 'Ready to play ✓';
+            loadAndInjectCaptions();
         });
+        
+        async function loadAndInjectCaptions() {
+            try {
+                const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
+                const response = await fetch(vttUrl);
+                const vttText = await response.text();
+                parseCuesFromVTT(vttText);
+                renderCaptionList();
+                console.log('Captions loaded: ' + allCues.length + ' cues');
+            } catch (e) {
+                console.error('Error loading captions:', e);
+            }
+        }
+        
+        function parseCuesFromVTT(vttText) {
+            const lines = vttText.split('\n');
+            let i = 0;
+            while (i < lines.length) {
+                const line = lines[i].trim();
+                if (line.includes('-->')) {
+                    const [startStr, endStr] = line.split('-->').map(t => t.trim());
+                    const start = timeToSeconds(startStr);
+                    const end = timeToSeconds(endStr);
+                    i++;
+                    let text = '';
+                    while (i < lines.length && lines[i].trim() !== '') {
+                        text += lines[i].trim() + ' ';
+                        i++;
+                    }
+                    if (text.trim()) {
+                        allCues.push({ start, end, text: text.trim() });
+                    }
+                }
+                i++;
+            }
+        }
+        
+        function timeToSeconds(timeStr) {
+            const parts = timeStr.split(':');
+            const hours = parseInt(parts[0]) || 0;
+            const minutes = parseInt(parts[1]) || 0;
+            const seconds = parseFloat(parts[2]) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+        
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h > 0 ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        
+        function renderCaptionList() {
+            const list = document.getElementById('caption-list');
+            list.innerHTML = '';
+            allCues.forEach((cue, idx) => {
+                const item = document.createElement('div');
+                item.className = 'caption-item';
+                item.id = 'caption-' + idx;
+                item.innerHTML = `
+                    <div class="caption-time">${formatTime(cue.start)} → ${formatTime(cue.end)}</div>
+                    <div class="caption-text">${cue.text}</div>
+                `;
+                item.addEventListener('click', () => {
+                    player.currentTime(cue.start);
+                    player.play();
+                });
+                list.appendChild(item);
+            });
+        }
 
         // Speed control
         document.getElementById('speed-select').addEventListener('change', function(e) {
