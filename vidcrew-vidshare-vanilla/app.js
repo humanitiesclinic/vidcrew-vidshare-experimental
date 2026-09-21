@@ -4,6 +4,7 @@ let csvData = '';
 // App state
 const appState = {
   notes: [],
+  csvHeaders: [],
   currentEvent: null,
   currentYear: null,
   currentTag: null,
@@ -21,6 +22,7 @@ const appState = {
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.trim());
+  appState.csvHeaders = headers; // Store headers for dynamic rendering
   const notes = [];
   let id = 1;
 
@@ -54,22 +56,12 @@ function parseCSV(csv) {
       classEvent: row['Occasion'] || 'Unknown',
       year: row['Year'] || '2024',
       tag: row['TAG'] || 'Untagged',
-      description: row['CUE'] || row['TAG'] || 'No description',
       videoPath: row['Full File Path'] || '',
       muxPlaybackId: row['Mux Playback ID'] || '',
       muxCaptionId: row['Mux Caption ID'] || '',
       startTime: startTime,
       endTime: endTime,
-      metadata: {
-        duration: duration,
-        resolution: '1920x1080',
-        codec: 'h264',
-        frameRate: '30 fps',
-        bitrate: '5000 kb/s',
-        audioCodec: 'aac',
-        sampleRate: '48000 Hz',
-        channels: 'stereo'
-      },
+      csvData: row, // Store all CSV row data for dynamic rendering
       createdAt: new Date().toISOString()
     };
 
@@ -392,6 +384,26 @@ function createNoteCard(note) {
   const card = document.createElement('div');
   card.className = 'note-card';
   const videoId = `player-${note.id}`;
+  
+  // Build metadata grid from CSV headers
+  const fieldsToExclude = ['Mux Upload Comments', 'Mux Asset ID', 'Full File Path', 'start_date', 'end_date', 'absolute_path . only for corrob. delete if correct', 'mapping to the exact NTDs. as of now only from `__agenda for BD2026, CN2026, SAn2026, haircut etc.txt`', 'ORIGIN FILE', 'segment_start_timecode', 'segment_end_timecode'];
+  const metadataHtml = appState.csvHeaders
+    .filter(header => !fieldsToExclude.includes(header))
+    .map(header => {
+      const value = note.csvData[header] || '';
+      const isEditable = true; // All CSV columns are editable
+      return `
+        <div class="meta-item editable-item" data-field="csvData.${header}" data-id="${note.id}">
+          <div class="label-with-chip">
+            <span class="label">${escapeHtml(header)}:</span>
+            <span class="badge editable">editable</span>
+          </div>
+          <span class="value">${escapeHtml(value)}</span>
+        </div>
+      `;
+    })
+    .join('');
+  
   card.innerHTML = `
     <div class="video-container">
       <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
@@ -401,50 +413,8 @@ function createNoteCard(note) {
     </div>
     <div class="caption-list" id="caption-list-${note.id}"></div>
     <div class="metadata-section">
-      <h2 class="description">${escapeHtml(note.description)}</h2>
       <div class="metadata-grid">
-        <div class="meta-item editable-item" data-field="classEvent" data-id="${note.id}">
-          <div class="label-with-chip">
-            <span class="label">Class Event:</span>
-            <span class="badge editable">editable</span>
-          </div>
-          <span class="value">${escapeHtml(note.classEvent)}</span>
-        </div>
-        <div class="meta-item editable-item" data-field="tag" data-id="${note.id}">
-          <div class="label-with-chip">
-            <span class="label">TAG:</span>
-            <span class="badge editable">editable</span>
-          </div>
-          <span class="value">${escapeHtml(note.tag)}</span>
-        </div>
-        <div class="meta-item editable-item" data-field="startTime" data-id="${note.id}">
-          <div class="label-with-chip">
-            <span class="label">Start Time:</span>
-            <span class="badge editable">editable</span>
-          </div>
-          <span class="value">${formatTime(note.startTime)}</span>
-        </div>
-        <div class="meta-item">
-          <div class="label-with-chip">
-            <span class="label">Duration:</span>
-            <span class="badge readonly">read-only</span>
-          </div>
-          <span class="value">${formatTime(note.metadata.duration)}</span>
-        </div>
-        <div class="meta-item">
-          <div class="label-with-chip">
-            <span class="label">Resolution:</span>
-            <span class="badge readonly">read-only</span>
-          </div>
-          <span class="value">${note.metadata.resolution}</span>
-        </div>
-        <div class="meta-item">
-          <div class="label-with-chip">
-            <span class="label">Codec:</span>
-            <span class="badge readonly">read-only</span>
-          </div>
-          <span class="value">${note.metadata.codec}</span>
-        </div>
+        ${metadataHtml}
       </div>
     </div>
   `;
@@ -454,14 +424,14 @@ function createNoteCard(note) {
       const field = item.dataset.field;
       const id = item.dataset.id;
       const note = appState.notes.find(n => n.id === parseInt(id));
-      if (note) startEdit(item, field, note);
+      if (note) startEdit(item, field, note, field.startsWith('csvData.'));
     });
   });
 
   return card;
 }
 
-function startEdit(element, field, note) {
+function startEdit(element, field, note, isCsvField) {
   const valueSpan = element.querySelector('.value');
   const currentValue = valueSpan.textContent;
   valueSpan.contentEditable = 'true';
@@ -471,7 +441,12 @@ function startEdit(element, field, note) {
     valueSpan.contentEditable = 'false';
     const newValue = valueSpan.textContent;
     if (newValue !== currentValue) {
-      note[field] = newValue;
+      if (isCsvField) {
+        const fieldName = field.replace('csvData.', '');
+        note.csvData[fieldName] = newValue;
+      } else {
+        note[field] = newValue;
+      }
     }
     valueSpan.removeEventListener('blur', finishEdit);
     valueSpan.removeEventListener('keydown', handleEditKeydown);
@@ -648,6 +623,11 @@ function initializeVideoPlayer(note, isCurrent) {
       player.playbackRate(1.5);
       loadCaptionsForNote(player, note);
     });
+    
+    // Caption list scroll and highlight on timeupdate
+    player.on('timeupdate', function() {
+      updateCaptionHighlight(note, player.currentTime());
+    });
   } else if (note.videoPath) {
     player.src({
       src: note.videoPath,
@@ -694,6 +674,9 @@ function loadCaptionsForNote(player, note) {
         i++;
       }
       
+      // Store cues on note for highlight function
+      note.cues = allCues;
+      
       if (allCues.length > 0) {
         captionListEl.innerHTML = '';
         allCues.forEach((cue, idx) => {
@@ -718,6 +701,27 @@ function loadCaptionsForNote(player, note) {
       console.error('Error loading captions:', err);
       if (captionListEl) captionListEl.innerHTML = '<p style="padding: 10px; color: #999; font-size: 12px;">Error loading captions</p>';
     });
+}
+
+function updateCaptionHighlight(note, currentTime) {
+  if (!note.cues) return;
+  
+  const captionListEl = document.getElementById(`caption-list-${note.id}`);
+  if (!captionListEl) return;
+  
+  // Remove all active classes
+  captionListEl.querySelectorAll('.caption-item').forEach(item => item.classList.remove('active'));
+  
+  // Find matching cue and highlight
+  note.cues.forEach((cue, idx) => {
+    if (currentTime >= cue.start && currentTime < cue.end) {
+      const item = document.getElementById(`caption-${note.id}-${idx}`);
+      if (item) {
+        item.classList.add('active');
+        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  });
 }
 
 function timeToSeconds(timeStr) {
