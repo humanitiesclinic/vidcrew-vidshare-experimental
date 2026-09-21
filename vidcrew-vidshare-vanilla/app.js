@@ -57,6 +57,7 @@ function parseCSV(csv) {
       description: row['CUE'] || row['TAG'] || 'No description',
       videoPath: row['Full File Path'] || '',
       muxPlaybackId: row['Mux Playback ID'] || '',
+      muxCaptionId: row['Mux Caption ID'] || '',
       startTime: startTime,
       endTime: endTime,
       metadata: {
@@ -394,6 +395,7 @@ function createNoteCard(note) {
   card.innerHTML = `
     <div class="video-container">
       <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
+        ${note.muxCaptionId ? `<track kind="captions" src="https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/${note.muxCaptionId}/0.vtt" srclang="en" label="English" default>` : ''}
         <p class="vjs-no-js">Enable JavaScript for video playback</p>
       </video>
     </div>
@@ -655,7 +657,7 @@ function initializeVideoPlayer(note, isCurrent) {
 }
 
 function loadCaptionsForNote(player, note) {
-  const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
+  const vttUrl = note.muxCaptionId ? `https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/${note.muxCaptionId}/0.vtt` : '';
   const captionListEl = document.getElementById(`caption-list-${note.id}`);
   
   if (!vttUrl || !captionListEl) {
