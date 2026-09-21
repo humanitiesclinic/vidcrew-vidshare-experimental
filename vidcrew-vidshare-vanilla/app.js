@@ -684,6 +684,8 @@ function loadCaptionsForNote(player, note) {
         allCues.forEach((cue, idx) => {
           const item = document.createElement('div');
           item.className = 'caption-item';
+          const overlapsSegment = cue.end > note.startTime && cue.start < note.endTime;
+          if (overlapsSegment) item.classList.add('in-segment');
           item.id = `caption-${note.id}-${idx}`;
           item.innerHTML = `
             <div class="caption-time">${formatTimeExtended(cue.start)} → ${formatTimeExtended(cue.end)}</div>

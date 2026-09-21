@@ -317,6 +317,14 @@ body {
 .caption-item:hover {
   background: #1a1a1a;
 }
+.caption-item:not(.in-segment) {
+  opacity: 0.35;
+}
+
+.caption-item.in-segment {
+  background: rgba(46, 125, 50, 0.2);
+  border-left: 3px solid #4caf50;
+}
 
 .caption-item.active {
   background: rgba(25, 118, 210, 0.2);
