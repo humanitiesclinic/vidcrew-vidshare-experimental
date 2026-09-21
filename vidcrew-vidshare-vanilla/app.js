@@ -395,7 +395,7 @@ function createNoteCard(note) {
   card.innerHTML = `
     <div class="video-container">
       <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
-        ${note.muxCaptionId ? `<track kind="captions" src="https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/${note.muxCaptionId}/0.vtt" srclang="en" label="English" default>` : ''}
+        ${note.muxPlaybackId && note.muxCaptionId ? `<track kind="captions" src="https://stream.mux.com/${note.muxPlaybackId}/text/${note.muxCaptionId}.vtt" srclang="en" label="English" default>` : ''}
         <p class="vjs-no-js">Enable JavaScript for video playback</p>
       </video>
     </div>
@@ -657,7 +657,7 @@ function initializeVideoPlayer(note, isCurrent) {
 }
 
 function loadCaptionsForNote(player, note) {
-  const vttUrl = note.muxCaptionId ? `https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/${note.muxCaptionId}/0.vtt` : '';
+  const vttUrl = (note.muxPlaybackId && note.muxCaptionId) ? `https://stream.mux.com/${note.muxPlaybackId}/text/${note.muxCaptionId}.vtt` : '';
   const captionListEl = document.getElementById(`caption-list-${note.id}`);
   
   if (!vttUrl || !captionListEl) {
