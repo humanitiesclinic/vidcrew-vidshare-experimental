@@ -630,8 +630,22 @@ function initializeVideoPlayer(note, isCurrent) {
       type: 'application/x-mpegURL'
     });
     
-    // Load captions from Mux VTT URL (if available)
-    loadCaptionsForNote(player, note);
+    // Segment control: auto-seek to start, auto-pause at end
+    player.on('play', function() {
+      player.currentTime(note.startTime);
+    });
+    
+    player.on('timeupdate', function() {
+      if (player.currentTime() >= note.endTime) {
+        player.pause();
+      }
+    });
+    
+    // Set default playback rate to 1.5x
+    player.on('loadedmetadata', function() {
+      player.playbackRate(1.5);
+      loadCaptionsForNote(player, note);
+    });
   } else if (note.videoPath) {
     player.src({
       src: note.videoPath,
@@ -641,17 +655,17 @@ function initializeVideoPlayer(note, isCurrent) {
 }
 
 function loadCaptionsForNote(player, note) {
-  // Fetch and parse VTT captions from Mux
-  // Using hardcoded test VTT URL for now - replace with dynamic URL from CSV
   const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
+  const captionListEl = document.getElementById(`caption-list-${note.id}`);
+  
+  if (!vttUrl || !captionListEl) {
+    if (captionListEl) captionListEl.innerHTML = '<p style="padding: 10px; color: #999; font-size: 12px;">No captions available</p>';
+    return;
+  }
   
   fetch(vttUrl)
     .then(response => response.text())
     .then(vttText => {
-      // Create text track
-      const track = player.addTextTrack('captions', 'English', 'en');
-      
-      // Parse VTT and add cues
       const lines = vttText.split('\n');
       let i = 0;
       const allCues = [];
@@ -672,17 +686,13 @@ function loadCaptionsForNote(player, note) {
           }
           
           if (text.trim()) {
-            const cue = new VTTCue(start, end, text.trim());
-            track.addCue(cue);
             allCues.push({ start, end, text: text.trim() });
           }
         }
         i++;
       }
       
-      // Render caption list UI
-      const captionListEl = document.getElementById(`caption-list-${note.id}`);
-      if (captionListEl && allCues.length > 0) {
+      if (allCues.length > 0) {
         captionListEl.innerHTML = '';
         allCues.forEach((cue, idx) => {
           const item = document.createElement('div');
@@ -698,9 +708,14 @@ function loadCaptionsForNote(player, note) {
           });
           captionListEl.appendChild(item);
         });
+      } else {
+        captionListEl.innerHTML = '<p style="padding: 10px; color: #999; font-size: 12px;">No captions found</p>';
       }
     })
-    .catch(err => console.error('Error loading captions:', err));
+    .catch(err => {
+      console.error('Error loading captions:', err);
+      if (captionListEl) captionListEl.innerHTML = '<p style="padding: 10px; color: #999; font-size: 12px;">Error loading captions</p>';
+    });
 }
 
 function timeToSeconds(timeStr) {
