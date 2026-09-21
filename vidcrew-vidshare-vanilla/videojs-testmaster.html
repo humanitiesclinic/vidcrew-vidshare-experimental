@@ -33,7 +33,7 @@
             <div id="time-display"></div>
             <div class="video-container">
                 <video id="my-player" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="400">
-                    <source src="" type="application/x-mpegURL">
+                    <source src="https://stream.mux.com/SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU.m3u8" type="application/x-mpegURL">
                     <track kind="captions" src="https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==" srclang="en" label="English" default>
                     <p class="vjs-no-js">Enable JavaScript for video playback</p>
                 </video>
@@ -42,31 +42,6 @@
             <div class="caption-list" id="caption-list"></div>
         </div>
 
-        <div class="controls">
-            <h3>Playback Controls</h3>
-            
-            <div class="speed-control">
-                <label for="speed-select">Playback Speed:</label>
-                <select id="speed-select">
-                    <option value="0.5">0.5x</option>
-                    <option value="1" selected>1x (Normal)</option>
-                    <option value="1.25">1.25x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2">2x</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="segment-start">Segment Start (sec):</label>
-                <input type="number" id="segment-start" value="0" min="0" step="0.1">
-                
-                <label for="segment-end">Segment End (sec):</label>
-                <input type="number" id="segment-end" value="0" min="0" step="0.1">
-                
-                <button onclick="applySegment()">Apply Segment</button>
-                <button onclick="resetSegment()">Reset Segment</button>
-            </div>
-        </div>
 
         <div class="info">
             <p><strong>Mux Playback ID:</strong> SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU</p>
@@ -78,204 +53,40 @@
 
     <script src="https://vjs.zencdn.net/7.20.3/video.js"></script>
     <script>
-        const playbackId = 'SvqqQy00F02XjvoHso00quQnXvhDqspUyfmn2uJoUqUIFU';
-        const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
-        const vttUrl = 'https://chunk-oci-us-ashburn-1-vop1.fastly.mux.com/v1/subtitle/VVVcQn7VWndhuINWjbsMzMV8tb8EaIMDn2SlwgOBwkHz3yTK5UZjCgo1cjKa8qz2gbvFesLqbcFX4wGATSkqvCwBgbvhLYf01/0.vtt?skid=default&signature=NmFiNmVlZTBfZWEyZGU3YWJjNTUxOGVkOTZhZDljNGYzNWFlMjRlYjMzNDZkOGM5NzU5OTJhNDZiNmVkODVhOGQwZWUxMjQ0MQ==';
+        const player = videojs('my-player');
+        const SEGMENT_START = 2;
+        const SEGMENT_END = 8;
         
-        let allCues = [];
-        let player;
-        let segmentActive = false;
-        let segmentEnd = 0;
-        let metadataLoaded = false;
-
-        // Initialize Video.js player
-        player = videojs('my-player', {
-            controls: true,
-            autoplay: false,
-            preload: 'auto',
-            responsive: true,
-            fluid: true
+        player.on('play', function() {
+          player.currentTime(SEGMENT_START);
         });
-
-        // Set HLS source
-        player.src({
-            src: hlsUrl,
-            type: 'application/x-mpegURL'
-        });
-
-        // Parse VTT and add cues to track
-        async function loadAndInjectCaptions() {
-            try {
-                const response = await fetch(vttUrl);
-                const vttText = await response.text();
-                
-                // Create text track
-                const track = player.addTextTrack('captions', 'English', 'en');
-                
-                // Parse VTT and add cues
-                parseCuesFromVTT(vttText, track);
-                
-                // Build caption list UI
-                renderCaptionList();
-                
-                console.log('Captions loaded: ' + allCues.length + ' cues');
-            } catch (e) {
-                console.error('Error loading captions:', e);
-                document.getElementById('status').textContent = 'Status: Error loading captions ✗';
-            }
-        }
         
-        function parseCuesFromVTT(vttText, track) {
-            const lines = vttText.split('\n');
-            let i = 0;
-            
-            while (i < lines.length) {
-                const line = lines[i].trim();
-                
-                if (line.includes('-->')) {
-                    const [startStr, endStr] = line.split('-->').map(t => t.trim());
-                    const start = timeToSeconds(startStr);
-                    const end = timeToSeconds(endStr);
-                    
-                    i++;
-                    let text = '';
-                    while (i < lines.length && lines[i].trim() !== '') {
-                        text += lines[i].trim() + ' ';
-                        i++;
-                    }
-                    
-                    if (text.trim()) {
-                        const cue = new VTTCue(start, end, text.trim());
-                        track.addCue(cue);
-                        allCues.push({ start, end, text: text.trim() });
-                    }
-                }
-                i++;
-            }
-        }
-        
-        function timeToSeconds(timeStr) {
-            const parts = timeStr.split(':');
-            const hours = parseInt(parts[0]) || 0;
-            const minutes = parseInt(parts[1]) || 0;
-            const seconds = parseFloat(parts[2]) || 0;
-            return hours * 3600 + minutes * 60 + seconds;
-        }
-        
-        function formatTime(seconds) {
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            return `${h > 0 ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }
-        
-        function renderCaptionList() {
-            const list = document.getElementById('caption-list');
-            list.innerHTML = '';
-            
-            allCues.forEach((cue, idx) => {
-                const item = document.createElement('div');
-                item.className = 'caption-item';
-                item.id = 'caption-' + idx;
-                item.innerHTML = `
-                    <div class="caption-time">${formatTime(cue.start)} → ${formatTime(cue.end)}</div>
-                    <div class="caption-text">${cue.text}</div>
-                `;
-                item.addEventListener('click', () => {
-                    player.currentTime(cue.start);
-                    player.play();
-                });
-                list.appendChild(item);
-            });
-        }
-        
-        function updateActiveCue(currentTime) {
-            document.querySelectorAll('.caption-item.active').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            const current = allCues.findIndex(cue => currentTime >= cue.start && currentTime <= cue.end);
-            if (current >= 0) {
-                const el = document.getElementById('caption-' + current);
-                if (el) {
-                    el.classList.add('active');
-                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        }
-
-        // Load captions immediately
-        loadAndInjectCaptions();
-
-        // Load metadata
-        player.on('loadedmetadata', function() {
-            document.getElementById('status').textContent = 'Status: Ready to play ✓';
-            const duration = player.duration();
-            document.getElementById('segment-end').value = duration.toFixed(1);
-            metadataLoaded = true;
-        });
-
-        player.on('error', function() {
-            document.getElementById('status').textContent = 'Status: Error loading video ✗';
-        });
-
-        // Update current time and active caption
         player.on('timeupdate', function() {
-            if (!metadataLoaded) return;
-            const current = player.currentTime();
-            const duration = player.duration();
-            const remaining = duration - current;
-            
-            // Update time display
-            document.getElementById('time-display').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
-            document.getElementById('current-time').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
-            
-            updateActiveCue(current);
-            
-            // Auto-pause at segment end
-            if (segmentActive && current >= segmentEnd) {
-                player.pause();
-                document.getElementById('status').textContent = 'Segment ended. Paused.';
-            }
+          if (player.currentTime() >= SEGMENT_END) {
+            player.pause();
+          }
+          const current = player.currentTime();
+          const duration = player.duration();
+          const remaining = duration - current;
+          document.getElementById('time-display').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
+          document.getElementById('current-time').textContent = `Time: ${current.toFixed(1)}s / ${duration.toFixed(1)}s (${remaining.toFixed(1)}s left)`;
+          document.getElementById('status').textContent = 'Playing...';
         });
-
-        // Speed control
-        document.getElementById('speed-select').addEventListener('change', function(e) {
-            player.playbackRate(parseFloat(e.target.value));
+        
+        player.on('loadedmetadata', function() {
+          player.playbackRate(1.5);
+          document.getElementById('status').textContent = 'Ready to play ✓';
         });
-
-        // Segment controls
-        window.applySegment = function() {
-            const start = parseFloat(document.getElementById('segment-start').value);
-            const end = parseFloat(document.getElementById('segment-end').value);
-            
-            if (isNaN(start) || isNaN(end) || start >= end) {
-                alert('Invalid segment times');
-                return;
-            }
-            
-            player.currentTime(start);
-            segmentEnd = end;
-            segmentActive = true;
-            player.play();
-            document.getElementById('status').textContent = `Segment active: ${start}s - ${end}s`;
-        };
-
-        window.resetSegment = function() {
-            segmentActive = false;
-            document.getElementById('status').textContent = 'Status: Ready to play ✓';
-        };
-
-        // Spacebar play/pause control
+        
         document.addEventListener('keydown', function(e) {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (player.paused()) {
-                    player.play();
-                } else {
-                    player.pause();
-                }
+          if (e.code === 'Space') {
+            e.preventDefault();
+            if (player.paused()) {
+              player.play();
+            } else {
+              player.pause();
             }
+          }
         });
     </script>
 </body>
