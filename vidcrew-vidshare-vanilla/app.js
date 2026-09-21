@@ -21,7 +21,10 @@ const appState = {
 // Parse CSV to notes
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  // Detect delimiter: check if first line has pipe or comma
+  const firstLine = lines[0];
+  const delimiter = firstLine.includes('|') ? '|' : ',';
+  const headers = firstLine.split(delimiter).map(h => h.trim());
   appState.csvHeaders = headers; // Store headers for dynamic rendering
   const notes = [];
   let id = 1;
@@ -30,7 +33,7 @@ function parseCSV(csv) {
     const line = lines[i];
     if (!line.trim()) continue;
 
-    const cells = parseCSVLine(line);
+    const cells = parseCSVLine(line, delimiter);
     const row = {};
     headers.forEach((h, idx) => {
       row[h] = cells[idx] ? cells[idx].trim() : '';
@@ -71,7 +74,7 @@ function parseCSV(csv) {
   return notes;
 }
 
-function parseCSVLine(line) {
+function parseCSVLine(line, delimiter = ',') {
   const cells = [];
   let current = '';
   let inQuotes = false;
@@ -81,7 +84,7 @@ function parseCSVLine(line) {
 
     if (char === '"') {
       inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       cells.push(current);
       current = '';
     } else {
