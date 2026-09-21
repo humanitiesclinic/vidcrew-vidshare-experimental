@@ -41,11 +41,11 @@ function parseCSV(csv) {
     const [dh, dm, ds] = durationStr.split(':').map(Number);
     const duration = dh * 3600 + dm * 60 + ds;
 
-    const startTimeStr = row['start_time'] || '00:00:00';
+    const startTimeStr = row['segment_start_timecode'] || '00:00:00';
     const [sh, sm, ss] = startTimeStr.split(':').map(Number);
     const startTime = sh * 3600 + sm * 60 + ss;
 
-    const endTimeStr = row['end_time'] || '00:00:00';
+    const endTimeStr = row['segment_end_timecode'] || '00:00:00';
     const [eh, em, es] = endTimeStr.split(':').map(Number);
     const endTime = eh * 3600 + em * 60 + es;
 
