@@ -140,7 +140,11 @@ function handleKeyDown(e) {
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
   const filtered = notesForEvent.filter(n => {
     return n.classEvent === appState.currentEvent && 
-           appState.dimensions.every(dim => n.csvData[dim.field] === appState.filters[dim.field]);
+           appState.dimensions.every(dim => {
+             const noteVal = n.csvData[dim.field];
+             const filterVal = appState.filters[dim.field];
+             return !noteVal || noteVal === filterVal;
+           });
   });
 
   // Dimension gear navigation
@@ -363,10 +367,15 @@ function renderDynamicTabBars() {
 }
 
 function renderSingleCard(notesForEvent) {
-  // Filter based on current filters
+  // Filter based on current filters (only match if dimension value exists in note)
   const filtered = notesForEvent.filter(n => {
     return n.classEvent === appState.currentEvent && 
-           appState.dimensions.every(dim => n.csvData[dim.field] === appState.filters[dim.field]);
+           appState.dimensions.every(dim => {
+             const noteVal = n.csvData[dim.field];
+             const filterVal = appState.filters[dim.field];
+             // Match if: note has value AND it equals filter, OR filter is null (no restriction)
+             return !noteVal || noteVal === filterVal;
+           });
   });
   
   const content = document.getElementById('feedContent');
