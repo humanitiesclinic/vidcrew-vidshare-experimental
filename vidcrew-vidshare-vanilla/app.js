@@ -6,8 +6,8 @@ const appState = {
   notes: [],
   csvHeaders: [],
   currentEvent: null,
-  dimensions: [], // Dynamic list of dimensions (Year, TAG, SN, etc.)
-  filters: {}, // Current filter values: { Year: '2025', TAG: 'tag1', SN: '5', cardPos: 1 }
+  currentYear: null,
+  currentTag: null,
   currentCardIndex: 0,
   touchStartX: 0,
   touchStartY: 0,
@@ -15,7 +15,7 @@ const appState = {
   editingField: null,
   editingCardId: null,
   editingValue: '',
-  focusedDimensionIdx: null // Index of currently focused dimension for keyboard navigation
+  focusedTabBar: null // 'year' or 'tag'
 };
 
 // Parse CSV to notes
@@ -137,95 +137,79 @@ function setupEventListeners() {
 function handleKeyDown(e) {
   if (!appState.currentEvent) return;
 
-  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const filtered = notesForEvent.filter(n => {
-    return n.classEvent === appState.currentEvent && 
-           appState.dimensions.every(dim => {
-             const noteVal = n.csvData[dim.field];
-             const filterVal = appState.filters[dim.field];
-             return !noteVal || noteVal === filterVal;
-           });
-  });
-
-  // Dimension gear navigation
-  if (appState.focusedDimensionIdx !== null) {
-    const dimIdx = appState.focusedDimensionIdx;
-    const dim = appState.dimensions[dimIdx];
-    const values = [...new Set(notesForEvent.map(n => n.csvData[dim.field]))].filter(Boolean).sort();
-    const currentVal = appState.filters[dim.field];
-    const currentIdx = values.indexOf(currentVal);
-
+  // Tab bar navigation
+  if (appState.focusedTabBar === 'year') {
     switch (e.key) {
       case 'ArrowLeft':
       case 'h':
-        if (currentIdx > 0) {
-          appState.filters[dim.field] = values[currentIdx - 1];
-          appState.currentCardIndex = 0;
-          appState.filters.cardPos = 1;
-          renderDynamicTabBars();
-          renderSingleCard(notesForEvent);
-        }
+        navigatePrevYear();
         e.preventDefault();
         return;
       case 'ArrowRight':
       case 'l':
-        if (currentIdx < values.length - 1) {
-          appState.filters[dim.field] = values[currentIdx + 1];
-          appState.currentCardIndex = 0;
-          appState.filters.cardPos = 1;
-          renderDynamicTabBars();
-          renderSingleCard(notesForEvent);
-        }
-        e.preventDefault();
-        return;
-      case 'ArrowUp':
-      case 'k':
-        if (dimIdx > 0) appState.focusedDimensionIdx--;
-        else appState.focusedDimensionIdx = null;
-        updateDimensionFocus();
+        navigateNextYear();
         e.preventDefault();
         return;
       case 'ArrowDown':
       case 'j':
-        if (dimIdx < appState.dimensions.length - 1) appState.focusedDimensionIdx++;
-        else appState.focusedDimensionIdx = null;
-        updateDimensionFocus();
+        appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+    }
+  } else if (appState.focusedTabBar === 'tag') {
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevTag();
+        e.preventDefault();
+        return;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextTag();
+        e.preventDefault();
+        return;
+      case 'ArrowUp':
+      case 'k':
+        appState.focusedTabBar = 'year';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+      case 'ArrowDown':
+      case 'j':
+        appState.focusedTabBar = null;
+        updateTabBarFocus();
         e.preventDefault();
         return;
     }
   }
 
-  // Card navigation (when no dimension focused)
-  if (appState.focusedDimensionIdx === null) {
+  // Card navigation (when no tab bar focused)
+  if (!appState.focusedTabBar) {
     switch (e.key) {
       case 'ArrowUp':
       case 'k':
-        if (appState.currentCardIndex > 0) {
-          appState.currentCardIndex--;
-          appState.filters.cardPos = appState.currentCardIndex + 1;
-          renderSingleCard(notesForEvent);
-        }
-        e.preventDefault();
+        scrollPrevCard();
         break;
       case 'ArrowDown':
       case 'j':
-        if (appState.currentCardIndex < filtered.length - 1) {
-          appState.currentCardIndex++;
-          appState.filters.cardPos = appState.currentCardIndex + 1;
-          renderSingleCard(notesForEvent);
-        }
-        e.preventDefault();
+        scrollNextCard();
+        break;
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevTag();
+        break;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextTag();
         break;
       case '1':
+        appState.focusedTabBar = 'year';
+        updateTabBarFocus();
+        break;
       case '2':
-      case '3':
-      case '4':
-        const dimIdx = parseInt(e.key) - 1;
-        if (dimIdx < appState.dimensions.length) {
-          appState.focusedDimensionIdx = dimIdx;
-          updateDimensionFocus();
-        }
-        e.preventDefault();
+        appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
         break;
     }
   }
@@ -298,89 +282,84 @@ function showFeedPage(eventClass) {
   document.getElementById('feedPage').classList.remove('hidden');
 
   const notesForEvent = appState.notes.filter(n => n.classEvent === eventClass);
-  initializeDimensions(notesForEvent);
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+
+  appState.currentYear = years[0] || null;
   appState.currentCardIndex = 0;
-  appState.focusedDimensionIdx = null;
-  renderDynamicTabBars();
-  renderSingleCard(notesForEvent);
+  renderYearTabs(years);
+  updateTagTabs(notesForEvent);
+  renderFeed(notesForEvent);
 }
 
-function initializeDimensions(notesForEvent) {
-  // Define dimensions: Occasion, Year, TAG, SN - all should be filterable
-  const dimensionFields = ['Occasion', 'Year', 'TAG', 'SN'];
-  appState.dimensions = dimensionFields.map(field => ({ field, name: field }));
-  
-  // Initialize filters with first available value for each dimension
-  appState.filters = {};
-  appState.dimensions.forEach(dim => {
-    const values = [...new Set(notesForEvent.map(n => n.csvData[dim.field]))].filter(Boolean).sort();
-    appState.filters[dim.field] = values[0] || null;
+function renderYearTabs(years) {
+  const yearTabsScroll = document.getElementById('yearTabsScroll');
+  yearTabsScroll.innerHTML = '';
+
+  years.forEach(year => {
+    const tab = document.createElement('button');
+    const isActive = year === appState.currentYear;
+    tab.className = 'tab' + (isActive ? ' active' : '');
+    tab.textContent = year;
+    tab.addEventListener('click', () => switchYear(year));
+    yearTabsScroll.appendChild(tab);
+    if (isActive) {
+      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
   });
-  
-  // cardPos is special: it's the position within filtered results (1-indexed)
-  appState.filters.cardPos = 1;
 }
 
-function renderDynamicTabBars() {
+function updateTagTabs(notesForEvent) {
+  const tagsForYearOccasion = [...new Set(notesForEvent
+    .filter(n => n.year === appState.currentYear)
+    .map(n => n.tag))].sort();
+
+  if (!appState.currentTag || !tagsForYearOccasion.includes(appState.currentTag)) {
+    appState.currentTag = tagsForYearOccasion[0] || null;
+  }
+
+  const tagTabsScroll = document.getElementById('tagTabsScroll');
+  tagTabsScroll.innerHTML = '';
+
+  tagsForYearOccasion.forEach(tag => {
+    const tab = document.createElement('button');
+    const isActive = tag === appState.currentTag;
+    tab.className = 'tab' + (isActive ? ' active' : '');
+    tab.textContent = tag;
+    tab.addEventListener('click', () => switchTag(tag));
+    tagTabsScroll.appendChild(tab);
+    if (isActive) {
+      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    }
+  });
+}
+
+function switchYear(year) {
+  appState.currentYear = year;
+  appState.currentCardIndex = 0;
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const container = document.getElementById('tabBarsContainer');
-  container.innerHTML = '';
-  
-  appState.dimensions.forEach((dim, dimIdx) => {
-    const barDiv = document.createElement('div');
-    barDiv.className = 'tab-bar dimension-bar';
-    barDiv.dataset.dimIdx = dimIdx;
-    
-    const label = document.createElement('span');
-    label.className = 'tab-label';
-    label.textContent = dim.name + ':';
-    barDiv.appendChild(label);
-    
-    const tabsScroll = document.createElement('div');
-    tabsScroll.className = 'tabs-scroll';
-    
-    // Get unique values for this dimension from filtered notes
-    const values = [...new Set(notesForEvent.map(n => n.csvData[dim.field]))].filter(Boolean).sort();
-    
-    values.forEach(value => {
-      const tab = document.createElement('button');
-      const isActive = value === appState.filters[dim.field];
-      tab.className = 'tab' + (isActive ? ' active' : '');
-      tab.textContent = value;
-      tab.addEventListener('click', () => {
-        appState.filters[dim.field] = value;
-        appState.currentCardIndex = 0;
-        appState.filters.cardPos = 1;
-        renderDynamicTabBars();
-        renderSingleCard(notesForEvent);
-      });
-      tabsScroll.appendChild(tab);
-      
-      if (isActive) {
-        setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
-      }
-    });
-    
-    barDiv.appendChild(tabsScroll);
-    container.appendChild(barDiv);
-  });
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+  renderYearTabs(years);
+  updateTagTabs(notesForEvent);
+  renderFeed(notesForEvent);
 }
 
-function renderSingleCard(notesForEvent) {
-  // Filter based on current filters (only match if dimension value exists in note)
-  const filtered = notesForEvent.filter(n => {
-    return n.classEvent === appState.currentEvent && 
-           appState.dimensions.every(dim => {
-             const noteVal = n.csvData[dim.field];
-             const filterVal = appState.filters[dim.field];
-             // Match if: note has value AND it equals filter, OR filter is null (no restriction)
-             return !noteVal || noteVal === filterVal;
-           });
-  });
-  
+function switchTag(tag) {
+  appState.currentTag = tag;
+  appState.currentCardIndex = 0;
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  updateTagTabs(notesForEvent);
+  renderFeed(notesForEvent);
+}
+
+function renderFeed(notesForEvent) {
+  const filtered = notesForEvent.filter(n => 
+    n.classEvent === appState.currentEvent && 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  );
   const content = document.getElementById('feedContent');
   
-  // Destroy old player
+  // Destroy old players before clearing DOM
   Object.keys(playerCache).forEach(videoId => {
     if (playerCache[videoId]) {
       playerCache[videoId].dispose();
@@ -389,26 +368,21 @@ function renderSingleCard(notesForEvent) {
   });
   
   content.innerHTML = '';
-  
-  if (filtered.length === 0) {
-    content.innerHTML = '<p style="padding: 20px; color: #999;">No cards match current filters</p>';
-    updatePositionBadge([]);
-    return;
-  }
-  
-  // Ensure currentCardIndex is within bounds
-  appState.currentCardIndex = Math.min(appState.currentCardIndex, filtered.length - 1);
-  appState.filters.cardPos = appState.currentCardIndex + 1;
-  
-  const note = filtered[appState.currentCardIndex];
-  const card = createNoteCard(note);
-  const wrapper = document.createElement('div');
-  wrapper.className = 'feed-card-wrapper current';
-  wrapper.appendChild(card);
-  content.appendChild(wrapper);
-  
+
+  filtered.forEach((note, idx) => {
+    const card = createNoteCard(note);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'feed-card-wrapper' + (idx === appState.currentCardIndex ? ' current' : '');
+    wrapper.appendChild(card);
+    content.appendChild(wrapper);
+  });
+
   updatePositionBadge(filtered);
-  initializeVideoPlayer(note, true);
+  
+  // Initialize Video.js players for all visible cards
+  filtered.forEach((note, idx) => {
+    initializeVideoPlayer(note, idx === appState.currentCardIndex);
+  });
 }
 
 function createNoteCard(note) {
@@ -492,26 +466,100 @@ function startEdit(element, field, note, isCsvField) {
   valueSpan.addEventListener('keydown', handleEditKeydown);
 }
 
-
-function updatePositionBadge(filtered) {
-  const badge = document.getElementById('positionBadge');
-  if (filtered.length === 0) {
-    badge.textContent = 'No cards';
-    return;
+function scrollNextCard() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  );
+  if (filtered.length === 0) return;
+  if (appState.currentCardIndex < filtered.length - 1) {
+    appState.currentCardIndex++;
+  } else {
+    appState.currentCardIndex = 0; // wrap around
   }
-  const filterStr = appState.dimensions.map(dim => `${dim.name}: ${appState.filters[dim.field]}`).join(' | ');
-  badge.textContent = `${filterStr} | Card: ${appState.currentCardIndex + 1}/${filtered.length}`;
+  renderFeed(notesForEvent);
+  scrollCurrentCardIntoView();
 }
 
-function updateDimensionFocus() {
-  const bars = document.querySelectorAll('.dimension-bar');
-  bars.forEach((bar, idx) => {
-    if (idx === appState.focusedDimensionIdx) {
-      bar.classList.add('focused');
-    } else {
-      bar.classList.remove('focused');
-    }
-  });
+function scrollPrevCard() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  );
+  if (filtered.length === 0) return;
+  if (appState.currentCardIndex > 0) {
+    appState.currentCardIndex--;
+  } else {
+    appState.currentCardIndex = filtered.length - 1; // wrap around
+  }
+  renderFeed(notesForEvent);
+  scrollCurrentCardIntoView();
+}
+
+function navigateNextYear() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+  const idx = years.indexOf(appState.currentYear);
+  if (idx < years.length - 1) {
+    switchYear(years[idx + 1]);
+  }
+}
+
+function navigatePrevYear() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+  const idx = years.indexOf(appState.currentYear);
+  if (idx > 0) {
+    switchYear(years[idx - 1]);
+  }
+}
+
+function navigateNextTag() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const tagsForYearOccasion = [...new Set(notesForEvent
+    .filter(n => n.year === appState.currentYear)
+    .map(n => n.tag))].sort();
+  const idx = tagsForYearOccasion.indexOf(appState.currentTag);
+  if (idx < tagsForYearOccasion.length - 1) {
+    switchTag(tagsForYearOccasion[idx + 1]);
+  }
+}
+
+function navigatePrevTag() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const tagsForYearOccasion = [...new Set(notesForEvent
+    .filter(n => n.year === appState.currentYear)
+    .map(n => n.tag))].sort();
+  const idx = tagsForYearOccasion.indexOf(appState.currentTag);
+  if (idx > 0) {
+    switchTag(tagsForYearOccasion[idx - 1]);
+  }
+}
+
+function updatePositionBadge(filtered) {
+  const current = filtered[appState.currentCardIndex];
+  const badge = document.getElementById('positionBadge');
+  if (current) {
+    badge.textContent = `${appState.currentYear} | ${appState.currentTag} | ${appState.currentCardIndex + 1}/${filtered.length}`;
+  }
+}
+
+function updateTabBarFocus() {
+  const yearTabs = document.querySelectorAll('.year-tabs .tab');
+  const tagTabs = document.querySelectorAll('.tag-tabs .tab');
+  
+  yearTabs.forEach(t => t.classList.remove('focused'));
+  tagTabs.forEach(t => t.classList.remove('focused'));
+  
+  if (appState.focusedTabBar === 'year') {
+    const activeYear = document.querySelector('.year-tabs .tab.active');
+    if (activeYear) activeYear.classList.add('focused');
+  } else if (appState.focusedTabBar === 'tag') {
+    const activeTag = document.querySelector('.tag-tabs .tab.active');
+    if (activeTag) activeTag.classList.add('focused');
+  }
 }
 
 function scrollCurrentCardIntoView() {
