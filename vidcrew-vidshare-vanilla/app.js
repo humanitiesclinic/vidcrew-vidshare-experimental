@@ -8,6 +8,7 @@ const appState = {
   currentEvent: null,
   currentYear: null,
   currentTag: null,
+  currentSN: null,
   currentCardIndex: 0,
   touchStartX: 0,
   touchStartY: 0,
@@ -15,7 +16,7 @@ const appState = {
   editingField: null,
   editingCardId: null,
   editingValue: '',
-  focusedTabBar: null // 'year' or 'tag'
+  focusedTabBar: null // 'year', 'tag', or 'sn'
 };
 
 // Parse CSV to notes
@@ -58,6 +59,7 @@ function parseCSV(csv) {
 
     const note = {
       id: id++,
+      sn: parseFloat(row['SN']) || 0,
       classEvent: row['Occasion'] || 'Unknown',
       year: row['Year'] || '2024',
       tag: row['TAG'] || 'Untagged',
@@ -177,6 +179,31 @@ function handleKeyDown(e) {
         return;
       case 'ArrowDown':
       case 'j':
+        appState.focusedTabBar = 'sn';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+    }
+  } else if (appState.focusedTabBar === 'sn') {
+    switch (e.key) {
+      case 'ArrowLeft':
+      case 'h':
+        navigatePrevSN();
+        e.preventDefault();
+        return;
+      case 'ArrowRight':
+      case 'l':
+        navigateNextSN();
+        e.preventDefault();
+        return;
+      case 'ArrowUp':
+      case 'k':
+        appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
+        e.preventDefault();
+        return;
+      case 'ArrowDown':
+      case 'j':
         appState.focusedTabBar = null;
         updateTabBarFocus();
         e.preventDefault();
@@ -195,13 +222,11 @@ function handleKeyDown(e) {
       case 'j':
         scrollNextCard();
         break;
-      case 'ArrowLeft':
-      case 'h':
-        navigatePrevTag();
+      case '[':
+        navigatePrevSN();
         break;
-      case 'ArrowRight':
-      case 'l':
-        navigateNextTag();
+      case ']':
+        navigateNextSN();
         break;
       case '1':
         appState.focusedTabBar = 'year';
@@ -209,6 +234,10 @@ function handleKeyDown(e) {
         break;
       case '2':
         appState.focusedTabBar = 'tag';
+        updateTabBarFocus();
+        break;
+      case '3':
+        appState.focusedTabBar = 'sn';
         updateTabBarFocus();
         break;
     }
@@ -242,6 +271,7 @@ function showListPage() {
   appState.currentEvent = null;
   appState.currentYear = null;
   appState.currentTag = null;
+  appState.currentSN = null;
 }
 
 function renderListPage() {
@@ -288,6 +318,7 @@ function showFeedPage(eventClass) {
   appState.currentCardIndex = 0;
   renderYearTabs(years);
   updateTagTabs(notesForEvent);
+  updateSNTab(notesForEvent);
   renderFeed(notesForEvent);
 }
 
@@ -348,6 +379,7 @@ function switchTag(tag) {
   appState.currentCardIndex = 0;
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
   updateTagTabs(notesForEvent);
+  updateSNTab(notesForEvent);
   renderFeed(notesForEvent);
 }
 
@@ -356,7 +388,7 @@ function renderFeed(notesForEvent) {
     n.classEvent === appState.currentEvent && 
     n.year === appState.currentYear && 
     n.tag === appState.currentTag
-  );
+  ).sort((a, b) => a.sn - b.sn);
   const content = document.getElementById('feedContent');
   
   // Destroy old players before clearing DOM
@@ -369,6 +401,17 @@ function renderFeed(notesForEvent) {
   
   content.innerHTML = '';
 
+  // Set current SN from first card if not set
+  if (filtered.length > 0 && !appState.currentSN) {
+    appState.currentSN = filtered[0].sn;
+  }
+  
+  // Find card index by SN
+  const snIndex = filtered.findIndex(n => n.sn === appState.currentSN);
+  if (snIndex !== -1) {
+    appState.currentCardIndex = snIndex;
+  }
+
   filtered.forEach((note, idx) => {
     const card = createNoteCard(note);
     const wrapper = document.createElement('div');
@@ -378,6 +421,7 @@ function renderFeed(notesForEvent) {
   });
 
   updatePositionBadge(filtered);
+  updateSNTab(notesForEvent);
   
   // Initialize Video.js players for all visible cards
   filtered.forEach((note, idx) => {
@@ -538,6 +582,60 @@ function navigatePrevTag() {
   }
 }
 
+function navigateNextSN() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  ).sort((a, b) => a.sn - b.sn);
+  
+  const idx = filtered.findIndex(n => n.sn === appState.currentSN);
+  if (idx >= 0 && idx < filtered.length - 1) {
+    appState.currentSN = filtered[idx + 1].sn;
+    appState.currentCardIndex = idx + 1;
+    renderFeed(notesForEvent);
+    scrollCurrentCardIntoView();
+  }
+}
+
+function navigatePrevSN() {
+  const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  ).sort((a, b) => a.sn - b.sn);
+  
+  const idx = filtered.findIndex(n => n.sn === appState.currentSN);
+  if (idx > 0) {
+    appState.currentSN = filtered[idx - 1].sn;
+    appState.currentCardIndex = idx - 1;
+    renderFeed(notesForEvent);
+    scrollCurrentCardIntoView();
+  }
+}
+
+
+function updateSNTab(notesForEvent) {
+  const filtered = notesForEvent.filter(n => 
+    n.year === appState.currentYear && 
+    n.tag === appState.currentTag
+  ).sort((a, b) => a.sn - b.sn);
+  
+  const snTabContainer = document.querySelector('.sn-tabs');
+  if (!snTabContainer) return;
+  
+  const snValue = appState.currentSN ? appState.currentSN.toString() : 'N/A';
+  snTabContainer.innerHTML = `
+    <span class="tab-label">SN:</span>
+    <button class="sn-nav-btn" id="snPrevBtn">←</button>
+    <span class="sn-display">${escapeHtml(snValue)}</span>
+    <button class="sn-nav-btn" id="snNextBtn">→</button>
+  `;
+  
+  document.getElementById('snPrevBtn').addEventListener('click', navigatePrevSN);
+  document.getElementById('snNextBtn').addEventListener('click', navigateNextSN);
+}
+
 function updatePositionBadge(filtered) {
   const current = filtered[appState.currentCardIndex];
   const badge = document.getElementById('positionBadge');
@@ -549,9 +647,11 @@ function updatePositionBadge(filtered) {
 function updateTabBarFocus() {
   const yearTabs = document.querySelectorAll('.year-tabs .tab');
   const tagTabs = document.querySelectorAll('.tag-tabs .tab');
+  const snTabContainer = document.querySelector('.sn-tabs');
   
   yearTabs.forEach(t => t.classList.remove('focused'));
   tagTabs.forEach(t => t.classList.remove('focused'));
+  if (snTabContainer) snTabContainer.classList.remove('focused');
   
   if (appState.focusedTabBar === 'year') {
     const activeYear = document.querySelector('.year-tabs .tab.active');
@@ -559,6 +659,8 @@ function updateTabBarFocus() {
   } else if (appState.focusedTabBar === 'tag') {
     const activeTag = document.querySelector('.tag-tabs .tab.active');
     if (activeTag) activeTag.classList.add('focused');
+  } else if (appState.focusedTabBar === 'sn') {
+    if (snTabContainer) snTabContainer.classList.add('focused');
   }
 }
 

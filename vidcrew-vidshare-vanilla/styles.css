@@ -162,6 +162,47 @@ body {
   top: 100px;
 }
 
+.tab-bar.sn-tabs {
+  top: 150px;
+  border-bottom: 1px solid #333;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.sn-nav-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #1976d2;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.sn-nav-btn:hover {
+  background: rgba(25, 118, 210, 0.1);
+  border-color: #1976d2;
+}
+
+.sn-display {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 6px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  min-width: 60px;
+  text-align: center;
+  display: inline-block;
+}
+
+.tab-bar.sn-tabs.focused {
+  outline: 2px solid #1976d2;
+  outline-offset: -1px;
+}
+
 .tab-label {
   color: #999;
   font-size: 0.85rem;
@@ -226,7 +267,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-top: 150px;
+  margin-top: 200px;
   scroll-behavior: smooth;
 }
 
