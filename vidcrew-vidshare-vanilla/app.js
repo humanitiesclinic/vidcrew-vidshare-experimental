@@ -26,7 +26,7 @@ function parseCSV(csv) {
   // Detect delimiter: check if first line has pipe or comma
   const firstLine = cleanLines[0];
   const delimiter = firstLine.includes('|') ? '|' : ',';
-  const headers = firstLine.split(delimiter).map(h => h.trim());
+  const headers = parseCSVLine(firstLine, delimiter).map(h => h.trim());
   appState.csvHeaders = headers; // Store headers for dynamic rendering
   const notes = [];
   let id = 1;
