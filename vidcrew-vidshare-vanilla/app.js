@@ -401,15 +401,16 @@ function renderFeed(notesForEvent) {
   
   content.innerHTML = '';
 
-  // Set current SN from first card if not set
-  if (filtered.length > 0 && !appState.currentSN) {
-    appState.currentSN = filtered[0].sn;
-  }
-  
-  // Find card index by SN
-  const snIndex = filtered.findIndex(n => n.sn === appState.currentSN);
-  if (snIndex !== -1) {
-    appState.currentCardIndex = snIndex;
+  // Set current SN from first card if not set or invalid
+  if (filtered.length > 0) {
+    if (!appState.currentSN || !filtered.some(n => n.sn === appState.currentSN)) {
+      appState.currentSN = filtered[0].sn;
+      appState.currentCardIndex = 0;
+    } else {
+      // Find card index by current SN
+      const snIndex = filtered.findIndex(n => n.sn === appState.currentSN);
+      appState.currentCardIndex = snIndex !== -1 ? snIndex : 0;
+    }
   }
 
   filtered.forEach((note, idx) => {
@@ -515,12 +516,14 @@ function scrollNextCard() {
   const filtered = notesForEvent.filter(n => 
     n.year === appState.currentYear && 
     n.tag === appState.currentTag
-  );
+  ).sort((a, b) => a.sn - b.sn);
   if (filtered.length === 0) return;
   if (appState.currentCardIndex < filtered.length - 1) {
     appState.currentCardIndex++;
+    appState.currentSN = filtered[appState.currentCardIndex].sn;
   } else {
     appState.currentCardIndex = 0; // wrap around
+    appState.currentSN = filtered[0].sn;
   }
   renderFeed(notesForEvent);
   scrollCurrentCardIntoView();
@@ -531,12 +534,14 @@ function scrollPrevCard() {
   const filtered = notesForEvent.filter(n => 
     n.year === appState.currentYear && 
     n.tag === appState.currentTag
-  );
+  ).sort((a, b) => a.sn - b.sn);
   if (filtered.length === 0) return;
   if (appState.currentCardIndex > 0) {
     appState.currentCardIndex--;
+    appState.currentSN = filtered[appState.currentCardIndex].sn;
   } else {
     appState.currentCardIndex = filtered.length - 1; // wrap around
+    appState.currentSN = filtered[appState.currentCardIndex].sn;
   }
   renderFeed(notesForEvent);
   scrollCurrentCardIntoView();
