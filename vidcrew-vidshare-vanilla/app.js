@@ -459,16 +459,22 @@ function createNoteCard(note) {
     .join('');
   
   card.innerHTML = `
-    <div class="video-container">
-      <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
-        ${note.muxPlaybackId && note.muxCaptionId ? `<track kind="captions" src="https://stream.mux.com/${note.muxPlaybackId}/text/${note.muxCaptionId}.vtt" srclang="en" label="English" default>` : ''}
-        <p class="vjs-no-js">Enable JavaScript for video playback</p>
-      </video>
-    </div>
-    <div class="caption-list" id="caption-list-${note.id}"></div>
-    <div class="metadata-section">
-      <div class="metadata-grid">
-        ${metadataHtml}
+    <div class="card-main">
+      <div class="card-left">
+        <div class="video-container">
+          <video id="${videoId}" class="video-js vjs-default-skin" controls preload="auto" width="100%" height="100%">
+            ${note.muxPlaybackId && note.muxCaptionId ? `<track kind="captions" src="https://stream.mux.com/${note.muxPlaybackId}/text/${note.muxCaptionId}.vtt" srclang="en" label="English" default>` : ''}
+            <p class="vjs-no-js">Enable JavaScript for video playback</p>
+          </video>
+        </div>
+        <div class="caption-list" id="caption-list-${note.id}"></div>
+      </div>
+      <div class="card-right">
+        <div class="metadata-section">
+          <div class="metadata-grid">
+            ${metadataHtml}
+          </div>
+        </div>
       </div>
     </div>
   `;
