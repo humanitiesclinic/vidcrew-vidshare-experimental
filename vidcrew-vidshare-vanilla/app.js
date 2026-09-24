@@ -134,6 +134,11 @@ function setupEventListeners() {
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('touchstart', handleTouchStart);
   window.addEventListener('touchend', handleTouchEnd);
+  // Event delegation for SN buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('sn-prev-btn')) navigatePrevSN();
+    if (e.target.classList.contains('sn-next-btn')) navigateNextSN();
+  });
 }
 
 function handleKeyDown(e) {
@@ -638,14 +643,6 @@ function updateSNTab(notesForEvent) {
     <span class="sn-display">${escapeHtml(snValue)}</span>
     <button class="sn-nav-btn sn-next-btn">→</button>
   `;
-  
-  // Attach listeners after DOM update
-  setTimeout(() => {
-    const prevBtn = snTabContainer.querySelector('.sn-prev-btn');
-    const nextBtn = snTabContainer.querySelector('.sn-next-btn');
-    if (prevBtn) prevBtn.addEventListener('click', navigatePrevSN);
-    if (nextBtn) nextBtn.addEventListener('click', navigateNextSN);
-  }, 0);
 }
 
 function updatePositionBadge(filtered) {
