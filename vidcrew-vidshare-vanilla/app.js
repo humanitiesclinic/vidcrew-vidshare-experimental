@@ -632,13 +632,18 @@ function updateSNTab(notesForEvent) {
   const snValue = appState.currentSN !== null ? String(appState.currentSN) : 'N/A';
   snTabContainer.innerHTML = `
     <span class="tab-label">SN:</span>
-    <button class="sn-nav-btn" id="snPrevBtn">←</button>
+    <button class="sn-nav-btn sn-prev-btn">←</button>
     <span class="sn-display">${escapeHtml(snValue)}</span>
-    <button class="sn-nav-btn" id="snNextBtn">→</button>
+    <button class="sn-nav-btn sn-next-btn">→</button>
   `;
   
-  document.getElementById('snPrevBtn').addEventListener('click', navigatePrevSN);
-  document.getElementById('snNextBtn').addEventListener('click', navigateNextSN);
+  // Attach listeners after DOM update
+  setTimeout(() => {
+    const prevBtn = snTabContainer.querySelector('.sn-prev-btn');
+    const nextBtn = snTabContainer.querySelector('.sn-next-btn');
+    if (prevBtn) prevBtn.addEventListener('click', navigatePrevSN);
+    if (nextBtn) nextBtn.addEventListener('click', navigateNextSN);
+  }, 0);
 }
 
 function updatePositionBadge(filtered) {
