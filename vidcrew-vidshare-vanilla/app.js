@@ -596,15 +596,18 @@ function navigatePrevTag() {
 
 function navigateNextSN() {
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const filtered = notesForEvent.filter(n => 
-    n.year === appState.currentYear && 
-    n.tag === appState.currentTag
-  ).sort((a, b) => a.sn - b.sn);
+  const allSorted = notesForEvent.sort((a, b) => a.sn - b.sn);
+  const idx = allSorted.findIndex(n => n.sn === appState.currentSN);
   
-  const idx = filtered.findIndex(n => n.sn === appState.currentSN);
-  if (idx >= 0 && idx < filtered.length - 1) {
-    appState.currentSN = filtered[idx + 1].sn;
-    appState.currentCardIndex = idx + 1;
+  if (idx >= 0 && idx < allSorted.length - 1) {
+    const nextNote = allSorted[idx + 1];
+    appState.currentSN = nextNote.sn;
+    appState.currentYear = nextNote.year;
+    appState.currentTag = nextNote.tag;
+    appState.currentCardIndex = 0;
+    renderYearTabs([...new Set(notesForEvent.map(n => n.year))].sort());
+    updateTagTabs(notesForEvent);
+    updateSNTab(notesForEvent);
     renderFeed(notesForEvent);
     scrollCurrentCardIntoView();
   }
@@ -612,15 +615,18 @@ function navigateNextSN() {
 
 function navigatePrevSN() {
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const filtered = notesForEvent.filter(n => 
-    n.year === appState.currentYear && 
-    n.tag === appState.currentTag
-  ).sort((a, b) => a.sn - b.sn);
+  const allSorted = notesForEvent.sort((a, b) => a.sn - b.sn);
+  const idx = allSorted.findIndex(n => n.sn === appState.currentSN);
   
-  const idx = filtered.findIndex(n => n.sn === appState.currentSN);
   if (idx > 0) {
-    appState.currentSN = filtered[idx - 1].sn;
-    appState.currentCardIndex = idx - 1;
+    const prevNote = allSorted[idx - 1];
+    appState.currentSN = prevNote.sn;
+    appState.currentYear = prevNote.year;
+    appState.currentTag = prevNote.tag;
+    appState.currentCardIndex = 0;
+    renderYearTabs([...new Set(notesForEvent.map(n => n.year))].sort());
+    updateTagTabs(notesForEvent);
+    updateSNTab(notesForEvent);
     renderFeed(notesForEvent);
     scrollCurrentCardIntoView();
   }
