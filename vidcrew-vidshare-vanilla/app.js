@@ -138,6 +138,8 @@ function setupEventListeners() {
 
 function handleKeyDown(e) {
   if (!appState.currentEvent) return;
+  // Don't handle navigation keys while editing
+  if (document.activeElement.contentEditable === 'true') return;
 
   // Tab bar navigation
   if (appState.focusedTabBar === 'year') {
