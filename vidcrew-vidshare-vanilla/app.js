@@ -624,7 +624,7 @@ function updateSNTab(notesForEvent) {
   const snTabContainer = document.querySelector('.sn-tabs');
   if (!snTabContainer) return;
   
-  const snValue = appState.currentSN ? appState.currentSN.toString() : 'N/A';
+  const snValue = appState.currentSN !== null ? String(appState.currentSN) : 'N/A';
   snTabContainer.innerHTML = `
     <span class="tab-label">SN:</span>
     <button class="sn-nav-btn" id="snPrevBtn">←</button>
