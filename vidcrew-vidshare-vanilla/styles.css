@@ -269,6 +269,7 @@ body {
   overflow-x: hidden;
   margin-top: 200px;
   scroll-behavior: smooth;
+  min-height: 0;
 }
 
 .feed-scroll::-webkit-scrollbar {
@@ -302,11 +303,13 @@ body {
 .feed-card-wrapper {
   width: 100%;
   max-width: 1200px;
-  height: 600px;
+  flex: 1;
+  min-height: 300px;
   display: flex;
   justify-content: center;
   opacity: 0.6;
   transition: opacity 0.3s ease;
+  align-items: center;
 }
 
 .feed-card-wrapper.current {
