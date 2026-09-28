@@ -420,21 +420,20 @@ function renderFeed(notesForEvent) {
     }
   }
 
-  filtered.forEach((note, idx) => {
-    const card = createNoteCard(note);
+  const currentNote = filtered[appState.currentCardIndex];
+  if (currentNote) {
+    const card = createNoteCard(currentNote);
     const wrapper = document.createElement('div');
-    wrapper.className = 'feed-card-wrapper' + (idx === appState.currentCardIndex ? ' current' : '');
+    wrapper.className = 'feed-card-wrapper current';
     wrapper.appendChild(card);
     content.appendChild(wrapper);
-  });
+  }
 
   updatePositionBadge(filtered);
   updateSNTab(notesForEvent);
   
-  // Initialize Video.js players for all visible cards
-  filtered.forEach((note, idx) => {
-    initializeVideoPlayer(note, idx === appState.currentCardIndex);
-  });
+  // Initialize only the active card; previous player and DOM were unloaded above.
+  if (currentNote) initializeVideoPlayer(currentNote, true);
 }
 
 function createNoteCard(note) {
@@ -719,7 +718,8 @@ function initializeVideoPlayer(note, isCurrent) {
     autoplay: isCurrent,
     preload: 'auto',
     responsive: true,
-    fluid: true
+    fluid: false,
+    fill: true
   });
   
   playerCache[videoId] = player;
