@@ -347,28 +347,86 @@ function renderYearTabs(years) {
 }
 
 function updateTagTabs(notesForEvent) {
-  const tagsForYearOccasion = [...new Set(notesForEvent
-    .filter(n => n.year === appState.currentYear)
-    .map(n => n.tag))].sort();
-
-  if (!appState.currentTag || !tagsForYearOccasion.includes(appState.currentTag)) {
-    appState.currentTag = tagsForYearOccasion[0] || null;
+  const notesForYear = notesForEvent.filter(n => n.year === appState.currentYear);
+  
+  // Build TAG→CUE mapping from current year/event notes
+  const tagToCue = {};
+  notesForYear.forEach(n => {
+    if (n.tag && n.csvData && n.csvData['CUE']) {
+      tagToCue[n.tag] = n.csvData['CUE'];
+    }
+  });
+  
+  // Separate tags by CUE and sort alphabetically
+  const keepTags = [];
+  const cutOutTags = [];
+  
+  Object.keys(tagToCue).sort().forEach(tag => {
+    if (tagToCue[tag] === 'KEEP') {
+      keepTags.push(tag);
+    } else if (tagToCue[tag] === 'CUT OUT') {
+      cutOutTags.push(tag);
+    }
+  });
+  
+  // Set current tag if not valid
+  const allTags = [...keepTags, ...cutOutTags];
+  if (!appState.currentTag || !allTags.includes(appState.currentTag)) {
+    appState.currentTag = allTags[0] || null;
   }
 
   const tagTabsScroll = document.getElementById('tagTabsScroll');
   tagTabsScroll.innerHTML = '';
-
-  tagsForYearOccasion.forEach(tag => {
-    const tab = document.createElement('button');
-    const isActive = tag === appState.currentTag;
-    tab.className = 'tab' + (isActive ? ' active' : '');
-    tab.textContent = tag;
-    tab.addEventListener('click', () => switchTag(tag));
-    tagTabsScroll.appendChild(tab);
-    if (isActive) {
-      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
-    }
-  });
+  
+  // Render KEEP group
+  if (keepTags.length > 0) {
+    const keepGroup = document.createElement('div');
+    keepGroup.className = 'tag-group keep-group';
+    
+    const keepLabel = document.createElement('span');
+    keepLabel.className = 'tag-group-label';
+    keepLabel.textContent = 'KEEP';
+    keepGroup.appendChild(keepLabel);
+    
+    keepTags.forEach(tag => {
+      const tab = document.createElement('button');
+      const isActive = tag === appState.currentTag;
+      tab.className = 'tab' + (isActive ? ' active' : '');
+      tab.textContent = tag;
+      tab.addEventListener('click', () => switchTag(tag));
+      keepGroup.appendChild(tab);
+      if (isActive) {
+        setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+      }
+    });
+    
+    tagTabsScroll.appendChild(keepGroup);
+  }
+  
+  // Render CUT OUT group
+  if (cutOutTags.length > 0) {
+    const cutGroup = document.createElement('div');
+    cutGroup.className = 'tag-group cut-group';
+    
+    const cutLabel = document.createElement('span');
+    cutLabel.className = 'tag-group-label';
+    cutLabel.textContent = 'CUT OUT';
+    cutGroup.appendChild(cutLabel);
+    
+    cutOutTags.forEach(tag => {
+      const tab = document.createElement('button');
+      const isActive = tag === appState.currentTag;
+      tab.className = 'tab' + (isActive ? ' active' : '');
+      tab.textContent = tag;
+      tab.addEventListener('click', () => switchTag(tag));
+      cutGroup.appendChild(tab);
+      if (isActive) {
+        setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+      }
+    });
+    
+    tagTabsScroll.appendChild(cutGroup);
+  }
 }
 
 function switchYear(year) {
