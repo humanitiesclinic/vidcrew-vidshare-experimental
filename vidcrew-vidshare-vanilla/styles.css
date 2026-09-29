@@ -186,7 +186,7 @@ body {
   border-color: #1976d2;
 }
 
-.sn-display {
+.sn-input {
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
@@ -197,6 +197,18 @@ body {
   min-width: 60px;
   text-align: center;
   display: inline-block;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sn-input:focus {
+  border-color: #1976d2;
+  background: rgba(25, 118, 210, 0.1);
+}
+
+.sn-input::placeholder {
+  color: #666;
 }
 
 .tab-bar.sn-tabs.focused {

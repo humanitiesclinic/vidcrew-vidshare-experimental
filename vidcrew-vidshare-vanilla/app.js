@@ -709,9 +709,49 @@ function updateSNTab(notesForEvent) {
   snTabContainer.innerHTML = `
     <span class="tab-label">SN:</span>
     <button class="sn-nav-btn sn-prev-btn">←</button>
-    <span class="sn-display">${escapeHtml(snValue)}</span>
+    <input type="text" class="sn-input" value="${escapeHtml(snValue)}" placeholder="Enter SN">
     <button class="sn-nav-btn sn-next-btn">→</button>
   `;
+  
+  const snInput = snTabContainer.querySelector('.sn-input');
+  if (snInput) {
+    snInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const inputSN = parseFloat(snInput.value.trim());
+        if (!isNaN(inputSN)) {
+          navigateToSN(inputSN, notesForEvent);
+        }
+      } else if (e.key === 'Escape') {
+        snInput.value = appState.currentSN !== null ? String(appState.currentSN) : 'N/A';
+      }
+    });
+    snInput.addEventListener('blur', () => {
+      snInput.value = appState.currentSN !== null ? String(appState.currentSN) : 'N/A';
+    });
+  }
+}
+
+function navigateToSN(targetSN, notesForEvent) {
+  const allNotes = notesForEvent.sort((a, b) => a.sn - b.sn);
+  const targetNote = allNotes.find(n => n.sn === targetSN);
+  
+  if (!targetNote) {
+    alert(`Serial number ${targetSN} not found.`);
+    return;
+  }
+  
+  // Update state to match target note
+  appState.currentSN = targetNote.sn;
+  appState.currentYear = targetNote.year;
+  appState.currentTag = targetNote.tag;
+  appState.currentCardIndex = 0;
+  
+  // Update all tabs and render
+  renderYearTabs([...new Set(notesForEvent.map(n => n.year))].sort());
+  updateTagTabs(notesForEvent);
+  updateSNTab(notesForEvent);
+  renderFeed(notesForEvent);
+  scrollCurrentCardIntoView();
 }
 
 function updatePositionBadge(filtered) {
