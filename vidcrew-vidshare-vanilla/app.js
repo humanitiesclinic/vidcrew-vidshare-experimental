@@ -841,9 +841,9 @@ function initializeVideoPlayer(note, isCurrent) {
       }
     });
     
-    // Set default playback rate to 1.5x
+    // Set default playback rate to 3x
     player.on('loadedmetadata', function() {
-      player.playbackRate(1.5);
+      player.playbackRate(3);
       loadCaptionsForNote(player, note);
     });
     
