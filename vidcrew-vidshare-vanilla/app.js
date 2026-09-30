@@ -49,13 +49,33 @@ function parseCSV(csv) {
     const [dh, dm, ds] = durationStr.split(':').map(Number);
     const duration = dh * 3600 + dm * 60 + ds;
 
-    const startTimeStr = row['segment_start_timecode'] || '00:00:00';
-    const [sh, sm, ss] = startTimeStr.split(':').map(Number);
-    const startTime = sh * 3600 + sm * 60 + ss;
-
-    const endTimeStr = row['segment_end_timecode'] || '00:00:00';
-    const [eh, em, es] = endTimeStr.split(':').map(Number);
-    const endTime = eh * 3600 + em * 60 + es;
+    const startTimeStr = row['segment_start_timecode'] || '';
+    const endTimeStr = row['segment_end_timecode'] || '';
+    
+    // Check if timecodes are valid (non-empty, valid format)
+    const isValidTimecode = (timeStr) => {
+      if (!timeStr || !timeStr.trim()) return false;
+      const parts = timeStr.split(':');
+      if (parts.length !== 3) return false;
+      return !parts.some(p => isNaN(Number(p)));
+    };
+    
+    const hasValidSegment = isValidTimecode(startTimeStr) && isValidTimecode(endTimeStr);
+    
+    let startTime = 0;
+    let endTime = 0;
+    
+    if (hasValidSegment) {
+      const [sh, sm, ss] = startTimeStr.split(':').map(Number);
+      startTime = sh * 3600 + sm * 60 + ss;
+      const [eh, em, es] = endTimeStr.split(':').map(Number);
+      endTime = eh * 3600 + em * 60 + es;
+    } else {
+      // No valid segment; use full video duration
+      const durationStr = row['duration'] || '00:00:00';
+      const [dh, dm, ds] = durationStr.split(':').map(Number);
+      endTime = dh * 3600 + dm * 60 + ds;
+    }
 
     const note = {
       id: id++,
@@ -68,6 +88,7 @@ function parseCSV(csv) {
       muxCaptionId: row['Mux Caption ID'] || '',
       startTime: startTime,
       endTime: endTime,
+      hasValidSegment: hasValidSegment,
       csvData: row, // Store all CSV row data for dynamic rendering
       createdAt: new Date().toISOString()
     };
@@ -830,16 +851,18 @@ function initializeVideoPlayer(note, isCurrent) {
       type: 'application/x-mpegURL'
     });
     
-    // Segment control: auto-seek to start, auto-pause at end
-    player.on('play', function() {
-      player.currentTime(note.startTime);
-    });
-    
-    player.on('timeupdate', function() {
-      if (player.currentTime() >= note.endTime) {
-        player.pause();
-      }
-    });
+    // Segment control: auto-seek to start, auto-pause at end (only if valid segment)
+    if (note.hasValidSegment) {
+      player.on('play', function() {
+        player.currentTime(note.startTime);
+      });
+      
+      player.on('timeupdate', function() {
+        if (player.currentTime() >= note.endTime) {
+          player.pause();
+        }
+      });
+    }
     
     // Set default playback rate to 3x
     player.on('loadedmetadata', function() {
