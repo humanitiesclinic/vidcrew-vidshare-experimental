@@ -248,6 +248,10 @@ body {
   border-right: none;
 }
 
+.tag-group.other-group {
+  opacity: 0.7;
+}
+
 .tag-group-label {
   color: #666;
   font-size: 0.75rem;

@@ -373,25 +373,33 @@ function updateTagTabs(notesForEvent) {
   // Build TAG→CUE mapping from current year/event notes
   const tagToCue = {};
   notesForYear.forEach(n => {
-    if (n.tag && n.csvData && n.csvData['CUE']) {
-      tagToCue[n.tag] = n.csvData['CUE'];
+    if (n.tag && n.csvData) {
+      const cueValue = n.csvData['CUE'] || '';
+      tagToCue[n.tag] = cueValue;
     }
   });
   
-  // Separate tags by CUE and sort alphabetically
-  const keepTags = [];
-  const cutOutTags = [];
-  
+  // Group tags by CUE value
+  const tagsByCue = {};
   Object.keys(tagToCue).sort().forEach(tag => {
-    if (tagToCue[tag] === 'KEEP') {
-      keepTags.push(tag);
-    } else if (tagToCue[tag] === 'CUT OUT') {
-      cutOutTags.push(tag);
+    const cueValue = tagToCue[tag] || '(empty)';
+    if (!tagsByCue[cueValue]) {
+      tagsByCue[cueValue] = [];
     }
+    tagsByCue[cueValue].push(tag);
   });
   
-  // Set current tag if not valid
-  const allTags = [...keepTags, ...cutOutTags];
+  // Define sort order: KEEP first, CUT OUT second, others after (alphabetically)
+  const sortedCues = Object.keys(tagsByCue).sort((a, b) => {
+    if (a === 'KEEP') return -1;
+    if (b === 'KEEP') return 1;
+    if (a === 'CUT OUT') return -1;
+    if (b === 'CUT OUT') return 1;
+    return a.localeCompare(b);
+  });
+  
+  // Flatten all tags for validation
+  const allTags = Object.values(tagsByCue).flat();
   if (!appState.currentTag || !allTags.includes(appState.currentTag)) {
     appState.currentTag = allTags[0] || null;
   }
@@ -399,55 +407,36 @@ function updateTagTabs(notesForEvent) {
   const tagTabsScroll = document.getElementById('tagTabsScroll');
   tagTabsScroll.innerHTML = '';
   
-  // Render KEEP group
-  if (keepTags.length > 0) {
-    const keepGroup = document.createElement('div');
-    keepGroup.className = 'tag-group keep-group';
+  // Render each CUE group
+  sortedCues.forEach(cueValue => {
+    const tags = tagsByCue[cueValue];
+    if (tags.length === 0) return;
     
-    const keepLabel = document.createElement('span');
-    keepLabel.className = 'tag-group-label';
-    keepLabel.textContent = 'KEEP';
-    keepGroup.appendChild(keepLabel);
+    const group = document.createElement('div');
+    group.className = 'tag-group';
+    if (cueValue === 'KEEP') group.classList.add('keep-group');
+    else if (cueValue === 'CUT OUT') group.classList.add('cut-group');
+    else group.classList.add('other-group');
     
-    keepTags.forEach(tag => {
+    const label = document.createElement('span');
+    label.className = 'tag-group-label';
+    label.textContent = cueValue;
+    group.appendChild(label);
+    
+    tags.forEach(tag => {
       const tab = document.createElement('button');
       const isActive = tag === appState.currentTag;
       tab.className = 'tab' + (isActive ? ' active' : '');
       tab.textContent = tag;
       tab.addEventListener('click', () => switchTag(tag));
-      keepGroup.appendChild(tab);
+      group.appendChild(tab);
       if (isActive) {
         setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
       }
     });
     
-    tagTabsScroll.appendChild(keepGroup);
-  }
-  
-  // Render CUT OUT group
-  if (cutOutTags.length > 0) {
-    const cutGroup = document.createElement('div');
-    cutGroup.className = 'tag-group cut-group';
-    
-    const cutLabel = document.createElement('span');
-    cutLabel.className = 'tag-group-label';
-    cutLabel.textContent = 'CUT OUT';
-    cutGroup.appendChild(cutLabel);
-    
-    cutOutTags.forEach(tag => {
-      const tab = document.createElement('button');
-      const isActive = tag === appState.currentTag;
-      tab.className = 'tab' + (isActive ? ' active' : '');
-      tab.textContent = tag;
-      tab.addEventListener('click', () => switchTag(tag));
-      cutGroup.appendChild(tab);
-      if (isActive) {
-        setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
-      }
-    });
-    
-    tagTabsScroll.appendChild(cutGroup);
-  }
+    tagTabsScroll.appendChild(group);
+  });
 }
 
 function switchYear(year) {
