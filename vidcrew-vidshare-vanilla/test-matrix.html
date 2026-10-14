@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Matrix</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+        }
+
+        /* TAG Matrix Grid */
+        .tag-matrix {
+            display: grid;
+            grid-template-columns: auto repeat(4, 80px);
+            gap: 1px;
+            padding: 8px;
+            background: #333;
+            border-radius: 4px;
+            width: fit-content;
+            overflow: auto;
+        }
+
+        .tag-matrix-row {
+            display: contents;
+        }
+
+        .tag-matrix-row.header-row {
+            display: contents;
+        }
+
+        .tag-matrix-cell {
+            background: #222;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            min-width: 70px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tag-matrix-cell.corner-cell {
+            background: #1a1a1a;
+            color: #666;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .tag-matrix-cell.header-cell {
+            background: #1a1a1a;
+            color: #999;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border-bottom: 2px solid #444;
+        }
+
+        .tag-matrix-cell.row-label-cell {
+            background: #1a1a1a;
+            color: #999;
+            font-size: 0.7rem;
+            font-weight: 500;
+            border-right: 2px solid #444;
+            text-align: center;
+            white-space: normal;
+            padding: 6px 8px;
+            line-height: 1.3;
+        }
+
+        .tag-matrix-cell.row-label-cell strong {
+            display: block;
+            font-weight: 600;
+            color: #fff;
+            font-size: 0.75rem;
+            margin-bottom: 2px;
+        }
+
+        .tag-matrix-cell.row-label-cell small {
+            display: block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .tag-matrix-cell.empty-cell {
+            background: #1a1a1a;
+            cursor: not-allowed;
+            opacity: 0.3;
+            color: #555;
+        }
+
+        .tag-matrix-cell.active-cell {
+            background: #2a2a2a;
+            color: #1976d2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-color: #1976d2;
+        }
+
+        .tag-matrix-cell.active-cell:hover:not(:disabled) {
+            background: #333;
+            border-color: #42a5f5;
+        }
+
+        .tag-matrix-cell.active {
+            background: rgba(25, 118, 210, 0.3);
+            border-color: #1976d2;
+            box-shadow: inset 0 0 8px rgba(25, 118, 210, 0.2);
+            color: #fff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Matrix: 4×4 Grid (Rows 1,2,3,4 vs Cols A,B,C,D)</h1>
+    
+    <div class="tag-matrix" id="testMatrix"></div>
+
+    <script>
+        const rows = ['1', '2', '3', '4'];
+        const cols = ['A', 'B', 'C', 'D'];
+        
+        // Define which cells are active (exist in data)
+        const activeCells = {
+            '1': ['A', 'B', 'C'],      // Row 1 has A, B, C
+            '2': ['A', 'D'],           // Row 2 has A, D
+            '3': ['B', 'C', 'D'],      // Row 3 has B, C, D
+            '4': ['A', 'B']            // Row 4 has A, B
+        };
+
+        const matrix = document.getElementById('testMatrix');
+
+        // Header row
+        const headerRow = document.createElement('div');
+        headerRow.className = 'tag-matrix-row header-row';
+
+        const corner = document.createElement('div');
+        corner.className = 'tag-matrix-cell corner-cell';
+        corner.textContent = 'ROW\\COL';
+        headerRow.appendChild(corner);
+
+        cols.forEach(col => {
+            const cell = document.createElement('div');
+            cell.className = 'tag-matrix-cell header-cell';
+            cell.textContent = col;
+            headerRow.appendChild(cell);
+        });
+
+        matrix.appendChild(headerRow);
+
+        // Data rows
+        rows.forEach(row => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'tag-matrix-row';
+
+            const rowLabel = document.createElement('div');
+            rowLabel.className = 'tag-matrix-cell row-label-cell';
+            rowLabel.innerHTML = `<strong>Row ${row}</strong>`;
+            rowEl.appendChild(rowLabel);
+
+            cols.forEach(col => {
+                const cell = document.createElement('button');
+                cell.className = 'tag-matrix-cell';
+                const hasData = activeCells[row].includes(col);
+
+                if (hasData) {
+                    cell.classList.add('active-cell');
+                    cell.textContent = '✓';
+                    cell.addEventListener('click', () => {
+                        console.log(`Clicked Row ${row}, Col ${col}`);
+                        // Remove active from all cells
+                        document.querySelectorAll('.tag-matrix-cell.active').forEach(c => c.classList.remove('active'));
+                        // Add active to this cell
+                        cell.classList.add('active');
+                    });
+                } else {
+                    cell.classList.add('empty-cell');
+                    cell.disabled = true;
+                }
+
+                rowEl.appendChild(cell);
+            });
+
+            matrix.appendChild(rowEl);
+        });
+    </script>
+</body>
+</html>

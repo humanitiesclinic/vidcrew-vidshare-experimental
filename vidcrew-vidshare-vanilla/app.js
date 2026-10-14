@@ -344,30 +344,12 @@ function showFeedPage(eventClass) {
 
   appState.currentYear = years[0] || null;
   appState.currentCardIndex = 0;
-  renderYearTabs(years);
-  updateTagTabs(notesForEvent);
+  updateMatrixSection(notesForEvent);
   updateSNTab(notesForEvent);
   renderFeed(notesForEvent);
 }
 
-function renderYearTabs(years) {
-  const yearTabsScroll = document.getElementById('yearTabsScroll');
-  yearTabsScroll.innerHTML = '';
-
-  years.forEach(year => {
-    const tab = document.createElement('button');
-    const isActive = year === appState.currentYear;
-    tab.className = 'tab' + (isActive ? ' active' : '');
-    tab.textContent = year;
-    tab.addEventListener('click', () => switchYear(year));
-    yearTabsScroll.appendChild(tab);
-    if (isActive) {
-      setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
-    }
-  });
-}
-
-function updateTagTabs(notesForEvent) {
+function updateMatrixSection(notesForEvent) {
   // Build TAG→CUE mapping from ALL event notes (not filtered by year)
   const tagToCue = {};
   notesForEvent.forEach(n => {
@@ -405,9 +387,9 @@ function updateTagTabs(notesForEvent) {
     appState.currentTag = allTags[0] || null;
   }
 
-  const tagTabsScroll = document.getElementById('tagTabsScroll');
-  tagTabsScroll.innerHTML = '';
-  tagTabsScroll.classList.add('tag-matrix');
+  const matrixSection = document.getElementById('matrixSection');
+  matrixSection.innerHTML = '';
+  matrixSection.classList.add('tag-matrix');
   
   // Render matrix header (year column labels)
   const headerRow = document.createElement('div');
@@ -425,7 +407,7 @@ function updateTagTabs(notesForEvent) {
     headerRow.appendChild(cell);
   });
   
-  tagTabsScroll.appendChild(headerRow);
+  matrixSection.appendChild(headerRow);
   
   // Render matrix rows (one per TAG+CUE combination)
   tagCueCombos.forEach(({ tag, cue }) => {
@@ -455,9 +437,7 @@ function updateTagTabs(notesForEvent) {
           appState.currentYear = year;
           appState.currentTag = tag;
           appState.currentCardIndex = 0;
-          const years = [...new Set(notesForEvent.map(n => n.year))].sort();
-          renderYearTabs(years);
-          updateTagTabs(notesForEvent);
+          updateMatrixSection(notesForEvent);
           updateSNTab(notesForEvent);
           renderFeed(notesForEvent);
         });
@@ -472,7 +452,7 @@ function updateTagTabs(notesForEvent) {
       row.appendChild(cell);
     });
     
-    tagTabsScroll.appendChild(row);
+    matrixSection.appendChild(row);
   });
 }
 
@@ -480,9 +460,7 @@ function switchYear(year) {
   appState.currentYear = year;
   appState.currentCardIndex = 0;
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  const years = [...new Set(notesForEvent.map(n => n.year))].sort();
-  renderYearTabs(years);
-  updateTagTabs(notesForEvent);
+  updateMatrixSection(notesForEvent);
   renderFeed(notesForEvent);
 }
 
@@ -490,7 +468,7 @@ function switchTag(tag) {
   appState.currentTag = tag;
   appState.currentCardIndex = 0;
   const notesForEvent = appState.notes.filter(n => n.classEvent === appState.currentEvent);
-  updateTagTabs(notesForEvent);
+  updateMatrixSection(notesForEvent);
   updateSNTab(notesForEvent);
   renderFeed(notesForEvent);
 }
