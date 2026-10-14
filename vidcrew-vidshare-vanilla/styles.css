@@ -315,24 +315,42 @@ body {
   border-bottom: 2px solid #444;
 }
 
-.tag-matrix-cell.cue-label-cell {
+.tag-matrix-cell.row-label-cell {
   background: #1a1a1a;
-  color: #666;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  color: #999;
+  font-size: 0.7rem;
+  font-weight: 500;
   border-right: 2px solid #444;
+  text-align: center;
+  white-space: normal;
+  padding: 6px 8px;
+  line-height: 1.3;
 }
 
-.tag-matrix-cell.cue-label-cell.cue-keep {
+.tag-matrix-cell.row-label-cell strong {
+  display: block;
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.tag-matrix-cell.row-label-cell small {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tag-matrix-cell.row-label-cell.cue-keep small {
   color: #4caf50;
 }
 
-.tag-matrix-cell.cue-label-cell.cue-cut {
+.tag-matrix-cell.row-label-cell.cue-cut small {
   color: #ff6b6b;
 }
 
-.tag-matrix-cell.cue-label-cell.cue-other {
+.tag-matrix-cell.row-label-cell.cue-other small {
   color: #ffc107;
   opacity: 0.7;
 }

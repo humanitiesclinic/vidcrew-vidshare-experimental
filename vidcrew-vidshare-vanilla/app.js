@@ -368,20 +368,19 @@ function renderYearTabs(years) {
 }
 
 function updateTagTabs(notesForEvent) {
-  const notesForYear = notesForEvent.filter(n => n.year === appState.currentYear);
-  
-  // Build TAG→CUE mapping from current year/event notes
+  // Build TAG→CUE mapping from ALL event notes (not filtered by year)
   const tagToCue = {};
-  notesForYear.forEach(n => {
+  notesForEvent.forEach(n => {
     if (n.tag && n.csvData) {
       const cueValue = n.csvData['CUE'] || '';
       tagToCue[n.tag] = cueValue;
     }
   });
   
-  // Get all unique tags and CUE values
+  // Get all unique tags, CUE values, and years
   const allTags = Object.keys(tagToCue).sort();
   const allCues = [...new Set(Object.values(tagToCue).map(v => v || '(empty)'))];
+  const allYears = [...new Set(notesForEvent.map(n => n.year))].sort();
   
   // Sort CUEs: KEEP first, CUT OUT second, others alphabetically
   const sortedCues = allCues.sort((a, b) => {
@@ -390,6 +389,15 @@ function updateTagTabs(notesForEvent) {
     if (a === 'CUT OUT') return -1;
     if (b === 'CUT OUT') return 1;
     return a.localeCompare(b);
+  });
+  
+  // Create TAG+CUE combinations
+  const tagCueCombos = [];
+  sortedCues.forEach(cue => {
+    const tagsWithCue = allTags.filter(tag => tagToCue[tag] === cue);
+    tagsWithCue.forEach(tag => {
+      tagCueCombos.push({ tag, cue });
+    });
   });
   
   // Validate current tag
@@ -401,50 +409,58 @@ function updateTagTabs(notesForEvent) {
   tagTabsScroll.innerHTML = '';
   tagTabsScroll.classList.add('tag-matrix');
   
-  // Render matrix header (tag column labels)
+  // Render matrix header (year column labels)
   const headerRow = document.createElement('div');
   headerRow.className = 'tag-matrix-row header-row';
   
   const cornerCell = document.createElement('div');
   cornerCell.className = 'tag-matrix-cell corner-cell';
-  cornerCell.textContent = 'CUE \ TAG';
+  cornerCell.textContent = 'TAG+CUE';
   headerRow.appendChild(cornerCell);
   
-  allTags.forEach(tag => {
+  allYears.forEach(year => {
     const cell = document.createElement('div');
     cell.className = 'tag-matrix-cell header-cell';
-    cell.textContent = tag;
+    cell.textContent = year;
     headerRow.appendChild(cell);
   });
   
   tagTabsScroll.appendChild(headerRow);
   
-  // Render matrix rows (one per CUE value)
-  sortedCues.forEach(cueValue => {
+  // Render matrix rows (one per TAG+CUE combination)
+  tagCueCombos.forEach(({ tag, cue }) => {
     const row = document.createElement('div');
     row.className = 'tag-matrix-row';
     
-    const cueLabel = document.createElement('div');
-    cueLabel.className = 'tag-matrix-cell cue-label-cell';
-    if (cueValue === 'KEEP') cueLabel.classList.add('cue-keep');
-    else if (cueValue === 'CUT OUT') cueLabel.classList.add('cue-cut');
-    else cueLabel.classList.add('cue-other');
-    cueLabel.textContent = cueValue;
-    row.appendChild(cueLabel);
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'tag-matrix-cell row-label-cell';
+    if (cue === 'KEEP') rowLabel.classList.add('cue-keep');
+    else if (cue === 'CUT OUT') rowLabel.classList.add('cue-cut');
+    else rowLabel.classList.add('cue-other');
+    rowLabel.innerHTML = `<strong>${escapeHtml(tag)}</strong><br><small>${escapeHtml(cue)}</small>`;
+    row.appendChild(rowLabel);
     
-    // Add cell for each tag in this row
-    allTags.forEach(tag => {
+    // Add cell for each year in this row
+    allYears.forEach(year => {
       const cell = document.createElement('button');
       cell.className = 'tag-matrix-cell';
-      const tagCue = tagToCue[tag] || '(empty)';
-      const hasTag = tagCue === cueValue;
-      const isActive = tag === appState.currentTag && hasTag;
+      const hasCombo = notesForEvent.some(n => n.tag === tag && n.year === year);
+      const isActive = tag === appState.currentTag && year === appState.currentYear && hasCombo;
       
-      if (hasTag) {
+      if (hasCombo) {
         cell.classList.add('active-cell');
         if (isActive) cell.classList.add('active');
         cell.textContent = '✓';
-        cell.addEventListener('click', () => switchTag(tag));
+        cell.addEventListener('click', () => {
+          appState.currentYear = year;
+          appState.currentTag = tag;
+          appState.currentCardIndex = 0;
+          const years = [...new Set(notesForEvent.map(n => n.year))].sort();
+          renderYearTabs(years);
+          updateTagTabs(notesForEvent);
+          updateSNTab(notesForEvent);
+          renderFeed(notesForEvent);
+        });
         if (isActive) {
           setTimeout(() => cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
         }
