@@ -262,6 +262,109 @@ body {
   white-space: nowrap;
 }
 
+/* TAG Matrix Grid */
+.tabs-scroll.tag-matrix {
+  display: grid;
+  grid-template-columns: auto repeat(auto-fit, minmax(80px, 1fr));
+  gap: 1px;
+  padding: 8px;
+  background: #333;
+  border-radius: 4px;
+  width: auto;
+  max-width: calc(100vw - 100px);
+  overflow: auto;
+}
+
+.tag-matrix-row {
+  display: contents;
+}
+
+.tag-matrix-row.header-row {
+  display: contents;
+}
+
+.tag-matrix-cell {
+  background: #222;
+  border: 1px solid #444;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  min-width: 70px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-matrix-cell.corner-cell {
+  background: #1a1a1a;
+  color: #666;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tag-matrix-cell.header-cell {
+  background: #1a1a1a;
+  color: #999;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 2px solid #444;
+}
+
+.tag-matrix-cell.cue-label-cell {
+  background: #1a1a1a;
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-right: 2px solid #444;
+}
+
+.tag-matrix-cell.cue-label-cell.cue-keep {
+  color: #4caf50;
+}
+
+.tag-matrix-cell.cue-label-cell.cue-cut {
+  color: #ff6b6b;
+}
+
+.tag-matrix-cell.cue-label-cell.cue-other {
+  color: #ffc107;
+  opacity: 0.7;
+}
+
+.tag-matrix-cell.empty-cell {
+  background: #1a1a1a;
+  cursor: not-allowed;
+  opacity: 0.3;
+  color: #555;
+}
+
+.tag-matrix-cell.active-cell {
+  background: #2a2a2a;
+  color: #1976d2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-color: #1976d2;
+}
+
+.tag-matrix-cell.active-cell:hover:not(:disabled) {
+  background: #333;
+  border-color: #42a5f5;
+}
+
+.tag-matrix-cell.active {
+  background: rgba(25, 118, 210, 0.3);
+  border-color: #1976d2;
+  box-shadow: inset 0 0 8px rgba(25, 118, 210, 0.2);
+  color: #fff;
+  font-weight: 600;
+}
+
 .tabs-scroll::-webkit-scrollbar {
   height: 3px;
 }

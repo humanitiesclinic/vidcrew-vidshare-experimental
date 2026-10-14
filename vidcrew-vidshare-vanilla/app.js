@@ -379,18 +379,12 @@ function updateTagTabs(notesForEvent) {
     }
   });
   
-  // Group tags by CUE value
-  const tagsByCue = {};
-  Object.keys(tagToCue).sort().forEach(tag => {
-    const cueValue = tagToCue[tag] || '(empty)';
-    if (!tagsByCue[cueValue]) {
-      tagsByCue[cueValue] = [];
-    }
-    tagsByCue[cueValue].push(tag);
-  });
+  // Get all unique tags and CUE values
+  const allTags = Object.keys(tagToCue).sort();
+  const allCues = [...new Set(Object.values(tagToCue).map(v => v || '(empty)'))];
   
-  // Define sort order: KEEP first, CUT OUT second, others after (alphabetically)
-  const sortedCues = Object.keys(tagsByCue).sort((a, b) => {
+  // Sort CUEs: KEEP first, CUT OUT second, others alphabetically
+  const sortedCues = allCues.sort((a, b) => {
     if (a === 'KEEP') return -1;
     if (b === 'KEEP') return 1;
     if (a === 'CUT OUT') return -1;
@@ -398,44 +392,71 @@ function updateTagTabs(notesForEvent) {
     return a.localeCompare(b);
   });
   
-  // Flatten all tags for validation
-  const allTags = Object.values(tagsByCue).flat();
+  // Validate current tag
   if (!appState.currentTag || !allTags.includes(appState.currentTag)) {
     appState.currentTag = allTags[0] || null;
   }
 
   const tagTabsScroll = document.getElementById('tagTabsScroll');
   tagTabsScroll.innerHTML = '';
+  tagTabsScroll.classList.add('tag-matrix');
   
-  // Render each CUE group
+  // Render matrix header (tag column labels)
+  const headerRow = document.createElement('div');
+  headerRow.className = 'tag-matrix-row header-row';
+  
+  const cornerCell = document.createElement('div');
+  cornerCell.className = 'tag-matrix-cell corner-cell';
+  cornerCell.textContent = 'CUE \ TAG';
+  headerRow.appendChild(cornerCell);
+  
+  allTags.forEach(tag => {
+    const cell = document.createElement('div');
+    cell.className = 'tag-matrix-cell header-cell';
+    cell.textContent = tag;
+    headerRow.appendChild(cell);
+  });
+  
+  tagTabsScroll.appendChild(headerRow);
+  
+  // Render matrix rows (one per CUE value)
   sortedCues.forEach(cueValue => {
-    const tags = tagsByCue[cueValue];
-    if (tags.length === 0) return;
+    const row = document.createElement('div');
+    row.className = 'tag-matrix-row';
     
-    const group = document.createElement('div');
-    group.className = 'tag-group';
-    if (cueValue === 'KEEP') group.classList.add('keep-group');
-    else if (cueValue === 'CUT OUT') group.classList.add('cut-group');
-    else group.classList.add('other-group');
+    const cueLabel = document.createElement('div');
+    cueLabel.className = 'tag-matrix-cell cue-label-cell';
+    if (cueValue === 'KEEP') cueLabel.classList.add('cue-keep');
+    else if (cueValue === 'CUT OUT') cueLabel.classList.add('cue-cut');
+    else cueLabel.classList.add('cue-other');
+    cueLabel.textContent = cueValue;
+    row.appendChild(cueLabel);
     
-    const label = document.createElement('span');
-    label.className = 'tag-group-label';
-    label.textContent = cueValue;
-    group.appendChild(label);
-    
-    tags.forEach(tag => {
-      const tab = document.createElement('button');
-      const isActive = tag === appState.currentTag;
-      tab.className = 'tab' + (isActive ? ' active' : '');
-      tab.textContent = tag;
-      tab.addEventListener('click', () => switchTag(tag));
-      group.appendChild(tab);
-      if (isActive) {
-        setTimeout(() => tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+    // Add cell for each tag in this row
+    allTags.forEach(tag => {
+      const cell = document.createElement('button');
+      cell.className = 'tag-matrix-cell';
+      const tagCue = tagToCue[tag] || '(empty)';
+      const hasTag = tagCue === cueValue;
+      const isActive = tag === appState.currentTag && hasTag;
+      
+      if (hasTag) {
+        cell.classList.add('active-cell');
+        if (isActive) cell.classList.add('active');
+        cell.textContent = '✓';
+        cell.addEventListener('click', () => switchTag(tag));
+        if (isActive) {
+          setTimeout(() => cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 0);
+        }
+      } else {
+        cell.classList.add('empty-cell');
+        cell.disabled = true;
       }
+      
+      row.appendChild(cell);
     });
     
-    tagTabsScroll.appendChild(group);
+    tagTabsScroll.appendChild(row);
   });
 }
 
